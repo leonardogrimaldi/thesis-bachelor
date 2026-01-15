@@ -209,6 +209,88 @@ I servizi di \texttt{PUT} e \texttt{DELETE} vengono così rifiutati, mentre per 
 \end{figure}
 \chapter{Security Misconfiguration}
 
+\section{Deprecated Interface}
+\texttt{routes/fileUpload.ts}, \texttt{server.ts}
+\par
+All'interno di \texttt{server.ts} si può notare la presenza dell'interfaccia di caricamento dei file su indirizzo \texttt{/file-upload}:
+\begin{lstlisting}[language=JavaScript,label={lst:file-upload-server}]
+app.post('/file-upload', uploadToMemory.single('file'), ensureFileIsPassed, metrics.observeFileUploadMetricsMiddleware(), handleZipFileUpload, handleXmlUpload, handleYamlUpload)
+\end{lstlisting}
+\par
+Su questa API vengono eseguite diverse funzioni *middleware*. Innanzitutto viene chiamata \texttt{uploadToMemory.single('file')} la quale esegue il caricamento del file nel buffer di memoria volatile, tramite la libreria \texttt{multer} di *Node.JS*, e aggiunge un limite di dimensione.
+\begin{lstlisting}[language=JavaScript,label={lst:upload-to-memory}]
+const uploadToMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200000 } })
+\end{lstlisting}
+\par
+La seconda funzione \texttt{ensureFileIsPassed} controlla la presenza del file, assicurando che non sia nullo. La terza (\texttt{metrics.observeFileUploadMetricsMiddleware()}) riguarda le metriche di *Prometheus* ed esegue il logging del tipo di file oppure il conteggio di upload erronei.
+\begin{lstlisting}[language=JavaScript,label={lst:observe-file-upload-metrics}]
+export function observeFileUploadMetricsMiddleware () {
+  return ({ file }: Request, res: Response, next: NextFunction) => {
+    onFinished(res, () => {
+      if (file != null) {
+        res.statusCode < 400 ? fileUploadsCountMetric.labels(file.mimetype).inc() : fileUploadErrorsMetric.labels(file.mimetype).inc()
+      }
+    })
+    next()
+  }
+}
+\end{lstlisting}
+\par
+Le successive funzioni riguardano la elaborazione di file specifici con estensione \texttt{.zip}, \texttt{.xml} e \texttt{yaml}. In tutto questo, si può notare la mancanza di un'importante funzione prottetiva: il controllo sul tipo di estensioni (Nel codice è già presente la funzione \texttt{checkFileType}, ma questa serve semplicemente per segnare il completamento della challenge. In un caso reale si può presuppore che i developer si siano dimenticati di eseguire il controllo oppure l'hanno realizzato male, poiché non comporta un semplice controllo della stringa di estensione). Nel Frontend di Angular è presente un controllo sul tipo di estensione, nello specifico in \texttt{frontend/src/app/complaint/complaint.component.ts}, ma occorre prestare attenzione poiché è codice lato client che può essere modificato o immediatamente aggirato intercettando la richiesta API con OWASP ZAP.
+\par
+Si sposta l'attenzione quindi su \texttt{routes/fileUpload.ts} dove si modificherà la funzione \texttt{checkFileType}. Si potrebbe molto facilmente pensare di usare il parametro \texttt{.mimetype} di un oggetto \texttt{Multer.File}, ma questo **non** è sicuro, poiché fa riferimento al header che viene inviato nella richiesta, che può essere intercettato dall'utente.
+\par
+Per eseguire un check sicuro occorre leggere il file per trovare il *magic number*, ovvero un codice specifico che identifica il contenuto del file. Su *Node.JS* questo viene eseguito con la funzione \texttt{fromBuffer} o \texttt{fileTypeFromBuffer} importata dal package \texttt{file-type}. Successivamente, si tratta semplicemente di controllare che il tipo ritornato sia incluso in quelli consentiti e in caso contrario ritornare un messaggio di errore.
+\begin{lstlisting}[language=JavaScript,label={lst:check-file-type-fixed}]
+import { fromBuffer } from 'file-type'
+async function checkFileType ({ file }: Request, res: Response, next: NextFunction) {
+  try {
+    const type = (file?.buffer != null) ? await fromBuffer(file.buffer) : undefined
+    const allowedTypes = ['application/pdf', 'application/xml', 'application/zip', 'application/x-yaml', 'text/yaml']
+    if (!type || !allowedTypes.includes(type.mime)) {
+      res.status(415)
+      next(new Error('Invalid file type'))
+    }
+  } catch (err) {
+    res.status(503)
+    next(new Error('Internal Server Error'))
+  }
+  next()
+}
+\end{lstlisting}
+\par
+Infine, si aggiorna \texttt{server.ts} per includere la funzione appena creata:
+\begin{lstlisting}[language=JavaScript,label={lst:file-upload-server-fixed}]
+app.post('/file-upload', uploadToMemory.single('file'), ensureFileIsPassed, checkFileType, metrics.observeFileUploadMetricsMiddleware(), handleZipFileUpload, handleXmlUpload, handleYamlUpload)
+\end{lstlisting}
+\par
+Ora, quando si tenta di caricare un file malevolo come \texttt{test.txt.zip} già subito si ottiene il riscontro HTTP 415, \texttt{Unsupported File Type} e la pagina HTML comunica l'errore correttamente. È stata tentata anche la modifica dell'attributo \texttt{filename=test.txt.zip} in \texttt{filename=test.txt} e la risposta è la **stessa**: il patch della vulnerabilità è stato eseguito correttamente.
+\begin{figure}
+    \centering
+    \includegraphics[width=.8\linewidth]{figures/complaint-txt-zip-payload.png}
+    \caption{Complaint form \texttt{/complaint} con allegato un file \texttt{text.txt.zip} }
+    \label{fig:complaint-txt-zip-payload}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[width=.8\linewidth]{figures/complaint-txt-zip-response.png}
+    \caption{Risposta di invio del file \texttt{test.txt.zip} a destra, con messaggio di errore \texttt{Invalid file type} e risposta HTTP 415}
+    \label{fig:complaint-txt-zip-response}
+\end{figure}
+\par
+L'ultimo procedimento da fare per completare la contromisura è quello di disabilitare effettivamente l'interfaccia deprecata. Nella funzione iniziale di \texttt{app.post('file-upload', ...)} si è potuto osservare la presenza di \texttt{handleXmlUpload} e \texttt{handleYamlUpload} che però internamente risultano deprecate per motivi di sicurezza. Questo perché entrambi sono esposti ad attacchi \texttt{XXE} che consentono di eseguire \texttt{Server-Side Request Forgery} e letture di file.
+\par
+Per disabilitarle, si possono effettivamente eliminare le funzioni di handling da \texttt{app.post()} formando così la istruzione finale:
+\begin{lstlisting}[language=JavaScript,label={lst:file-upload-server-final}]
+app.post('/file-upload', uploadToMemory.single('file'), ensureFileIsPassed, metrics.observeFileUploadMetricsMiddleware(), checkUploadSize, checkFileType, handleZipFileUpload)
+\end{lstlisting}
+Il server ora non effettua più il parsing di codice \texttt{XML} o \texttt{YAML}. In più, dentro la funzione \texttt{checkFileType} precedentemente scritta si tolgono le due estensioni non più consentite:
+\begin{lstlisting}[language=JavaScript]
+const allowedTypes = ['application/pdf', 'application/zip']
+\end{lstlisting}
+Finalmente, il lavoro di patching è terminato a buon fine e l'API \texttt{/file-upload} non è più vulnerabile a \texttt{XXE} e \texttt{Unrestricted File Upload}. 
+
+
 You may also put some code snippet (which is NOT float by default), eg: \cref{lst:random-code}.
 
 \lstinputlisting[float,language=Java,label={lst:random-code}]{listings/HelloWorld.java}
