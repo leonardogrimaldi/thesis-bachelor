@@ -15,7 +15,7 @@
 \title{Sicurezza delle API REST: analisi sperimentale di vulnerabilità comuni e strategie di difesa}
 \author{Leonardo Grimaldi}
 \date{\today}
-\subject{Supervisor's course name}
+\subject{Programmazione di Reti}
 \supervisor{Prof. Andrea Piroddi}
 \cosupervisor{Dott. CoSupervisor 1}
 \morecosupervisor{Dott. CoSupervisor 2}
@@ -51,7 +51,7 @@ Optional. Max a few lines.
 \mainmatter
 
 %----------------------------------------------------------------------------------------
-\chapter{Introduction}
+\chapter{Introduzione}
 \label{chap:introduction}
 %----------------------------------------------------------------------------------------
 
@@ -77,21 +77,9 @@ you may need both \ac{vm} and \acp{vm}.
 
 \chapter{State of the art}
 
-I suggest referencing stuff as follows: \cref{fig:random-image} or \Cref{fig:random-image}
-
-\begin{figure}
-    \centering
-    \includegraphics[width=.8\linewidth]{figures/random-image.pdf}
-    \caption{Some random image}
-    \label{fig:random-image}
-\end{figure}
-
-\section{Some cool topic}
-
-\chapter{Contribution}
-\chapter{Applicazione vulnerabile}
+\section{Applicazione vulnerabile}
 Prima ancora di incominciare la valutazione di sicurezza è necessario scegliere un sito web vulnerabile. In rete sono presenti una vasta gamma di applicazioni per la simulazione di attacchi informatici, come \ac{DVWA}\cite{dvwa-github} (basato su PHP) e OWASP Juice Shop\cite{owasp-juice-shop} (basato su Node.js). In questa tesi si è scelto di utilizzare quest'ultima per modernità di tecnologie e aggiornamenti.
-\section{OWASP Juice Shop}
+\subsection{OWASP Juice Shop}
 \textit{Juice Shop} è un sito web che simula un portale di vendita per prodotti di vario tipo. Presenta numerose funzionalità tra cui la registrazione, ordinazione, invio di recensioni, commenti e molto altro ancora, il che la rende un'applicazione completa. Essendo ideata per l'apprendimento e la pratica del testing di sicurezza, presenta anche numerose vulnerabilità web che fanno parte della lista \ac{OWASP} TOP 10\cite{owasp-top-10}.
 \begin{figure}
     \centering
@@ -109,8 +97,19 @@ La figura \ref{fig:juice-shop-architecture} mostra tutte le componenti di svilup
     \caption{Diagramma dell'architettura dell'applicazione OWASP Juice Shop.}
     \label{fig:juice-shop-architecture}
 \end{figure}
-\chapter{XSS (Cross-Site Scripting)}
-\section{Barra di ricerca}
+
+
+I suggest referencing stuff as follows: \cref{fig:random-image} or \Cref{fig:random-image}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.8\linewidth]{figures/random-image.pdf}
+    \caption{Some random image}
+    \label{fig:random-image}
+\end{figure}
+\chapter{Contribution}
+\section{XSS (Cross-Site Scripting)}
+\subsection{Barra di ricerca}
 \texttt{search-result.component.ts}
 \par
 Codice vulnerabile
@@ -146,8 +145,8 @@ Ci si può domandare cosa avviene utilizzando un payload diverso, come \texttt{<
 (**PATCHED**)
 Un attacco più sofisticato che si può presupporre di eseguire conoscendo il framework del sito è il [Template Injection](https://www.paloaltonetworks.com/blog/cloud-security/template-injection-vulnerabilities/). Si tratta di incorporare dentro al payload espressioni speciali come \texttt{\{\{\}\}} e far eseguire al motore JavaScript codice arbitrario e/o malizioso.
 \end{sloppypar}
-\chapter{Injection}
-\section{Database Schema}
+\section{Injection}
+\subsection{Database Schema}
 \texttt{routes/search.ts}
 \lstinputlisting[language=JavaScript,label={lst:searchProducts}]{listings/searchProducts.ts}
 \begin{sloppypar}
@@ -185,8 +184,8 @@ Proseguendo, viene eseguito il testing di Injection per assicurarsi che la vulne
 \end{figure}
 \par
 Il payload \lstinline{test')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_master--} che in precedenza restituiva l'intero schema SQLite ora restituisce un array vuoto.
-\chapter{Broken Access Control}
-\section{Product Tampering}
+\section{Broken Access Control}
+\subsection{Product Tampering}
 \texttt{server.ts}
 \par
 Il file \texttt{server.ts} è il punto di entrata principale invocato all'avvio dell'applicazione Node.js. Contiene la procedura \texttt{start()} che inizializza i servizi di WebSocket riguardanti le notifiche, le metriche di Prometheus e assegna la porta di ascolto del server. Inoltre, fa uso di **ExpressJS** per impostare gli endpoint API personalizzati. Riunisce tutte le componenti del back-end per offrire indirizzi URL all'utente finale che potrà interagire ed usufruire dei servizi esposti.
@@ -227,9 +226,8 @@ I servizi di \texttt{PUT} e \texttt{DELETE} vengono così rifiutati, mentre per 
     \caption{Errore di autorizzazione dopo aver tentato una richiesta \texttt{PUT} su \texttt{/api/Products/9}}
     \label{fig:api-products-put-after}
 \end{figure}
-\chapter{Security Misconfiguration}
-
-\section{Deprecated Interface}
+\section{Security Misconfiguration}
+\subsection{Deprecated Interface}
 \texttt{routes/fileUpload.ts}, \texttt{server.ts}
 \par
 All'interno di \texttt{server.ts} si può notare la presenza dell'interfaccia di caricamento dei file su indirizzo \texttt{/file-upload}:
@@ -325,7 +323,7 @@ You may also put some code snippet (which is NOT float by default), eg: \cref{ls
 
 %\nocite{*} % Remove this as soon as you have the first citation
 
-\bibliographystyle{alpha}
+\bibliographystyle{ieeetr}
 \bibliography{bibliography}
 
 \begin{acknowledgements} % this is optional
