@@ -27,6 +27,7 @@
 \acrodef{vm}[VM]{Virtual Machine}
 \acrodef{DVWA}{Damn Vulnerable Web Application}
 \acrodef{OWASP}{Open Web Application Security Project}
+\acrodef{PWA}{Progressive Web Application}
 
 \mainlinespacing{1.241} % line spacing in mainmatter, comment to default (1)
 
@@ -54,6 +55,12 @@ Optional. Max a few lines.
 \chapter{Introduzione}
 \label{chap:introduction}
 %----------------------------------------------------------------------------------------
+Le vulnerabilità web sono una delle principali minacce alla sicurezza delle applicazioni odierne.
+Di recente, una falla di sicurezza su un portale web automobilistico ha portato all'accesso completo su un sistema aziendale statunitense, consentendo l'accesso ad automobili e segreti aziendali\cite{eaton-defcon}. 
+
+In questa tesi sono state esplorate alcune delle vulnerabilità più comuni nelle API REST con l'ausilio di un'applicazione web vulnerabile chiamata OWASP Juice Shop. Inoltre è stato mostrato codice di esempio per ogni vulnerabilità elencata e sono state proposte delle contromisure per mitigare i rischi associati. L'obiettivo di questa tesi è di fornire una panoramica sulle insidie di sicurezza più comuni nello sviluppo web e quali minacce informatiche possano derivarne.
+\par
+La metodologia adottata per l'implementazione di contromisure si è basata su una prima analisi dell'applicazione per trovare i punti di attacco. Dopodiché si è esaminato il codice associato alla pagina vulnerabile e consultate le documentazioni in rete per trovare i miglior standard e modi di aggiornamento (patching). 
 
 Write your intro here.
 \sidenote{Add sidenotes in this way. They are named after the author of the thesis}
@@ -75,6 +82,7 @@ you may need both \ac{vm} and \acp{vm}.
 
 \note{At the end, describe the structure of the paper}
 
+\chapter{Background}
 \chapter{State of the art}
 
 \section{Applicazione vulnerabile}
@@ -90,7 +98,7 @@ Prima ancora di incominciare la valutazione di sicurezza è necessario scegliere
 \subsection{Architettura}
 L'applicazione web si divide in due componenti: il \textit{front end} e il \textit{back end}. Il front end gestisce la parte visiva dell'applicazione e fruibile dall'utente finale. È stato sviluppato con Angular, un framework moderno che consente la modulazione di elementi web scritti con TypeScript. Il back end costituisce la parte più complessa dell'applicazione, che interagisce con i database e fornisce i servizi necessari per molte funzionalità del sito. Il web server è fornito da Node.js che si affida alla libreria Express per le REST API e Sequelize per le interrogazioni al database SQLite.
 \par
-La figura \ref{fig:juice-shop-architecture} mostra tutte le componenti di sviluppo dell'applicazione. Le frecce nere indicano le chiamate o interazioni API tra di esse. Una complessità maggiore dell'applicazione porta inevitabilmente a un rischio più elevato di attacchi informatici.
+La \cref{fig:juice-shop-architecture} mostra tutte le componenti di sviluppo dell'applicazione. Le frecce nere indicano le chiamate o interazioni API tra di esse. Una complessità maggiore dell'applicazione porta inevitabilmente a un rischio più elevato di attacchi informatici.
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{figures/architecture-diagram.png}
