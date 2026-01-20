@@ -5,6 +5,7 @@
 \usepackage{notes}
 \usepackage{shortcuts}
 \usepackage{acronym}
+\usepackage{copyrightbox}
 
 \definecolor{lightgray}{rgb}{.9,.9,.9}
 \definecolor{darkgray}{rgb}{.4,.4,.4}
@@ -17,8 +18,8 @@
 \date{\today}
 \subject{Programmazione di Reti}
 \supervisor{Prof. Andrea Piroddi}
-\cosupervisor{Dott. CoSupervisor 1}
-\morecosupervisor{Dott. CoSupervisor 2}
+%\cosupervisor{Dott. CoSupervisor 1}
+%\morecosupervisor{Dott. CoSupervisor 2}
 \session{IV}
 \academicyear{2024-2025}
 
@@ -28,6 +29,8 @@
 \acrodef{DVWA}{Damn Vulnerable Web Application}
 \acrodef{OWASP}{Open Web Application Security Project}
 \acrodef{PWA}{Progressive Web Application}
+\acrodef{XSS}{Cross-Site Scripting}
+\acrodef{SQL}{Structured Query Language}
 
 \mainlinespacing{1.241} % line spacing in mainmatter, comment to default (1)
 
@@ -91,7 +94,7 @@ Prima ancora di incominciare la valutazione di sicurezza è necessario scegliere
 \textit{Juice Shop} è un sito web che simula un portale di vendita per prodotti di vario tipo. Presenta numerose funzionalità tra cui la registrazione, ordinazione, invio di recensioni, commenti e molto altro ancora, il che la rende un'applicazione completa. Essendo ideata per l'apprendimento e la pratica del testing di sicurezza, presenta anche numerose vulnerabilità web che fanno parte della lista \ac{OWASP} TOP 10\cite{owasp-top-10}.
 \begin{figure}
     \centering
-    \includegraphics[width=.8\linewidth]{figures/JuiceShop_Logo.png}
+    \copyrightbox{\includegraphics[scale=0.05]{figures/JuiceShop_Logo.png}}{Copyright © by Bjoern Kimminich \& the OWASP Juice Shop contributors 2014-2026. Licensed under the MIT License\cite{juice-shop-license}}
     \caption{Logo dell'applicazione OWASP Juice Shop.}
     \label{fig:juice-shop-logo}
 \end{figure}
@@ -101,32 +104,27 @@ L'applicazione web si divide in due componenti: il \textit{front end} e il \text
 La \cref{fig:juice-shop-architecture} mostra tutte le componenti di sviluppo dell'applicazione. Le frecce nere indicano le chiamate o interazioni API tra di esse. Una complessità maggiore dell'applicazione porta inevitabilmente a un rischio più elevato di attacchi informatici.
 \begin{figure}
     \centering
-    \includegraphics[width=.8\linewidth]{figures/architecture-diagram.png}
-    \caption{Diagramma dell'architettura dell'applicazione OWASP Juice Shop.}
+    \copyrightbox[b]{\includegraphics[width=.8\linewidth]{figures/architecture-diagram.png}}{Copyright © by Bjoern Kimminich and licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License\cite{noncommercial-noderivatives-4.0}}
+    \caption{Diagramma dell'architettura dell'applicazione OWASP Juice Shop.\cite{architecture-overview}}
     \label{fig:juice-shop-architecture}
 \end{figure}
-
-
-I suggest referencing stuff as follows: \cref{fig:random-image} or \Cref{fig:random-image}
-
-\begin{figure}
-    \centering
-    \includegraphics[width=.8\linewidth]{figures/random-image.pdf}
-    \caption{Some random image}
-    \label{fig:random-image}
-\end{figure}
 \chapter{Contribution}
+In questo capitolo vengono analizzati quattro tipi di vulnerabilità presenti su Juice Shop.
+%Per ognuna di esse viene mostrato il codice vulnerabile, la spiegazione della falla di sicurezza, il payload di attacco e infine la contromisura adottata per risolvere il problema.
+Tutto il codice riportato in questa sezione è rilasciato sotto licenza MIT\cite{juice-shop-license}.
 \section{XSS (Cross-Site Scripting)}
+La componente front end della barra di ricerca è spesso una fonte di vulnerabilità per il computer dell'utente se non gestita in modo sicuro. Molte volte i valori di ricerca non vengono sanificati (ripuliti da codice speciale come tag HTML con codice JavaScript) e ciò può portare all'esecuzione di codice non previsto sulla macchina utente. Se il valore di ricerca viene immesso nell'URL, questo può essere usato per un attacco di hacking dove si inietta del codice malizioso all'interno di un link che la vittima apre, compromettendo i suoi dati sul sito. È proprio ciò che accadde in questa sezione, dove verrà risolta una vulnerabilità \ac{XSS} nella barra di ricerca del sito.
 \subsection{Barra di ricerca}
-\texttt{search-result.component.ts}
 \par
-Codice vulnerabile
-\lstinputlisting[language=JavaScript,label={lst:filterTable}]{listings/filterTable.ts}
+\texttt{search-result.component.ts}
 \begin{sloppypar}
-Angular assiste i sviluppatori diffidando gli input provenienti da utenti e quindi implementando una rigida sanificazione dei valori da inserire nel DOM\cite{angular-xss-docs}. Tuttavia, rende anche possibile la disattivazione\cite{angular-safe-values-docs} del meccanismo di sanificazione automatica per scopi precisi (come inserimento di \texttt{<iframe>}) con \texttt{bypassSecurityTrust...}. In questo caso però gli sviluppatori del sito hanno commesso un errore: la barra di ricerca non necessità di particolari funzionalità aggiuntive; essa deve solamente elaborare la stringa di ricerca e restituire i prodotti che soddisfano la stringa. Nel codice quindi viene eliminato \texttt{this.sanitizer.bypassSecurityTrustHtml(queryParam)} e sostituito con \texttt{queryParam}.
+Il framework Angular assiste i sviluppatori diffidando gli input provenienti da utenti e quindi implementando una rigida sanificazione dei valori da inserire nel DOM\cite{angular-xss-docs}. Tuttavia, rende anche possibile la disattivazione\cite{angular-safe-values-docs} del meccanismo di sanificazione automatica per scopi precisi (come inserimento di \texttt{<iframe>}) con \texttt{bypassSecurityTrust...}.
+\lstinputlisting[language=JavaScript,label={lst:filterTable}, caption={Filtro dei prodotti in base alla stringa di ricerca. La riga 6 mostra un uso scorretto di \texttt{bypassSecurityTrustHtml}}]{listings/filterTable.ts}
+\par
+In questo caso però gli sviluppatori del sito hanno commesso un errore: la barra di ricerca non necessità di particolari funzionalità aggiuntive; essa deve solamente elaborare la stringa di ricerca e restituire i prodotti che soddisfano la stringa. Nel codice quindi viene eliminato \texttt{this.sanitizer.bypassSecurityTrustHtml(queryParam)} e sostituito con \texttt{queryParam}.
 \end{sloppypar}
 \begin{sloppypar}
-Ora avendo apportato la modifica si tenta il payload \texttt{<iframe src="javascript:alert(`xss`)">} nella barra di ricerca. Visualmente non si ha nessun riscontro e neppure nell'ispeziona elementi si vede alcuna traccia dell'elemento \texttt{<iframe>}. 
+Ora avendo apportato la modifica si tenta il payload \texttt{<iframe src="javascript:alert(`xss`)">} nella barra di ricerca. Visualmente non si ha nessun riscontro e neppure nell'ispeziona elementi si vede alcuna traccia dell'elemento \texttt{<iframe>}. La \cref{fig:search-bar-iframe-payload-after} mostra l'albero degli elementi dopo l'inserimento del payload, dove si nota che l'elemento non viene inserito nel DOM, poiché contiene un tag non consentito.
 \end{sloppypar}
 \begin{figure}
     \centering
@@ -135,41 +133,44 @@ Ora avendo apportato la modifica si tenta il payload \texttt{<iframe src="javasc
     \label{fig:search-bar-iframe-payload-after}
 \end{figure}
 \begin{sloppypar}
-Ci si può domandare cosa avviene utilizzando un payload diverso, come \texttt{<img src=javascript:alert('XSS')>}. La risposta è che *Angular* immette l'elemento nel DOM con la peculiarità che viene aggiunto l'attributo *unsafe* dinanzi al codice JavaScript, rendendolo del tutto inagibile e stampando in console il seguente errore:
+Ci si può domandare cosa avviene utilizzando un payload diverso, come \texttt{<img src=javascript:alert('XSS')>}. La risposta è che Angular immette l'elemento nel DOM con la peculiarità che viene aggiunto l'attributo \textit{unsafe} dinanzi al codice JavaScript, rendendolo del tutto inagibile e stampando in console l'errore di \cref{fig:search-bar-img-payload-console}.
 \end{sloppypar}
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{figures/search-bar-img-payload-console.png}
-    \caption{Errore in console con payload img}
+    \caption{Errore in console con payload di tipo \texttt{<img src=javascript:alert('XSS')>}}
     \label{fig:search-bar-img-payload-console}
 \end{figure}
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{figures/search-bar-img-payload-after.png}
-    \caption{Payload \texttt{<img src=javascript:alert('XSS')>} nella barra di ricerca. L'albero degli elementi mostra che l'elemento non viene inserito}
+    \caption{Payload \texttt{<img src=javascript:alert('XSS')>} nella barra di ricerca. L'elemento immagine viene inserito, ma il codice JavaScript viene etichettato non sicuro}
     \label{fig:search-bar-img-payload-after}
 \end{figure}
 \begin{sloppypar}
 (**PATCHED**)
 Un attacco più sofisticato che si può presupporre di eseguire conoscendo il framework del sito è il [Template Injection](https://www.paloaltonetworks.com/blog/cloud-security/template-injection-vulnerabilities/). Si tratta di incorporare dentro al payload espressioni speciali come \texttt{\{\{\}\}} e far eseguire al motore JavaScript codice arbitrario e/o malizioso.
 \end{sloppypar}
-\section{Injection}
-\subsection{Database Schema}
+\section{SQL Injection}
+Le interrogazioni SQL stanno alla base di ogni sito dinamico. Mentre nella sezione precedente si è vista una vulnerabilità che coinvolge il client, qui verrà mostrato come un utente malizioso potrebbe interagire con il sito web (server) per ottenere informazioni riservate del database.
+\par
+Il punto di partenza per il seguente attacco è nuovamente la barra di ricerca che esegue una interrogazione vulnerabile sul server, accettando ogni tipo di parametro.
+\subsection{Fuga di dati tramite API}
 \texttt{routes/search.ts}
-\lstinputlisting[language=JavaScript,label={lst:searchProducts}]{listings/searchProducts.ts}
+\lstinputlisting[language=JavaScript,label={lst:searchProducts}, caption={Ricerca dei prodotti con query SQL vulnerabile}]{listings/searchProducts.ts}
 \begin{sloppypar}
-In questa funzione che espone l'API di ricerca dei prodotti \texttt{/rest/products/search} è presente codice SQL vulnerabile, legato a un uso non corretto della libreria Sequelize\cite{sequelize}. *Sequelize* è un ORM (Object-Relational Mapping) per *Node.js* che consente di interagire con database come MySQL e, in questo caso, SQLite.
+In questa funzione che espone l'API di ricerca dei prodotti \texttt{/rest/products/search} è presente codice SQL vulnerabile, legato a un uso non corretto della libreria Sequelize\cite{sequelize}. Sequelize è un ORM (Object-Relational Mapping) per Node.js che consente di interagire con database come MySQL e, in questo caso, SQLite.
 \end{sloppypar}
 \par
-La funzione \texttt{query()}\cite{sequelize-query} consente di passare un parametro stringa contenente la query SQL e restituisce una Promise\cite{mdn-promise} contenente il risultato. La vulnerabilità back-end del sito si trova precisamente nell'utilizzo di questo metodo: gli sviluppatori hanno costruito la stringa SQL in modo dinamico facendo un pass  aggio di parametro.
+La funzione \texttt{query()}\cite{sequelize-query} consente di passare un parametro stringa contenente la query SQL e restituisce una Promise\cite{mdn-promise} contenente il risultato. La vulnerabilità back-end del sito si trova precisamente nell'utilizzo di questo metodo: gli sviluppatori hanno costruito la stringa SQL in modo dinamico facendo un passaggio di parametro.
 \begin{lstlisting}[language=JavaScript,label={lst:criteria-query}]
 models.sequelize.query(`SELECT * FROM Products WHERE ((name LIKE '%${criteria}%' OR description LIKE '%${criteria}%') AND deletedAt IS NULL) ORDER BY name`)
 \end{lstlisting}
 \par
 Nel codice sopra riportato viene mostrata la query di selezione contenente il parametro \texttt{criteria}, ovvero la chiave di ricerca del prodotto. Questo viene fornito usando la formattazione \texttt{`\$\{chiave\}`} che corrisponde al Template Literal\cite{ts-template-literal} di TypeScript. In questo modo la query SQL può essere costruita dinamicamente e in un modo facile, ma rende possibile l'Injection poiché il parametro non viene sanificato. L'utente malizioso, infatti, potrà eseguire un attacco di tipo \texttt{UNION} per ottenere l'intero schema del database!
 \par
-Per procedere alla risoluzione di questo problema è necessario leggere la documentazione\cite{sequelize-raw-queries} di Sequelize ed utilizzare correttamente le funzionalità *Replacements* oppure *Bind Parameter*  per eseguire la sanificazione della stringa proveniente dal client ed interagire nel modo più sicuro con il database.
-Usando i *replacements* si crea un formato di rimpiazzamento riscrivendo il blocco \texttt{'\%\$\{criteria\}\%'} con \texttt{:chiave}, formando la query finale in questo modo:
+Per procedere alla risoluzione di questo problema è necessario leggere la documentazione\cite{sequelize-raw-queries} di Sequelize ed utilizzare correttamente le funzionalità \textit{Replacements} oppure \textit{Bind Parameter} per eseguire la sanificazione della stringa proveniente dal client ed interagire nel modo più sicuro con il database.
+Usando i \textit{replacements} si crea un formato di rimpiazzamento riscrivendo il blocco \texttt{'\%\$\{criteria\}\%'} con \texttt{:chiave}, formando la query finale in questo modo:
 \begin{lstlisting}[language=SQL,label={lst:criteria-query-vul}]
 SELECT * FROM Products WHERE ((name LIKE :chiave OR description LIKE :chiave) AND deletedAt IS NULL) ORDER BY name
 \end{lstlisting}.
@@ -193,7 +194,7 @@ Proseguendo, viene eseguito il testing di Injection per assicurarsi che la vulne
 \par
 Il payload \lstinline{test')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_master--} che in precedenza restituiva l'intero schema SQLite ora restituisce un array vuoto.
 \section{Broken Access Control}
-\subsection{Product Tampering}
+\subsection{Manomissione dei prodotti}
 \texttt{server.ts}
 \par
 Il file \texttt{server.ts} è il punto di entrata principale invocato all'avvio dell'applicazione Node.js. Contiene la procedura \texttt{start()} che inizializza i servizi di WebSocket riguardanti le notifiche, le metriche di Prometheus e assegna la porta di ascolto del server. Inoltre, fa uso di **ExpressJS** per impostare gli endpoint API personalizzati. Riunisce tutte le componenti del back-end per offrire indirizzi URL all'utente finale che potrà interagire ed usufruire dei servizi esposti.
@@ -235,7 +236,7 @@ I servizi di \texttt{PUT} e \texttt{DELETE} vengono così rifiutati, mentre per 
     \label{fig:api-products-put-after}
 \end{figure}
 \section{Security Misconfiguration}
-\subsection{Deprecated Interface}
+\subsection{Interfaccia deprecata}
 \texttt{routes/fileUpload.ts}, \texttt{server.ts}
 \par
 All'interno di \texttt{server.ts} si può notare la presenza dell'interfaccia di caricamento dei file su indirizzo \texttt{/file-upload}:
