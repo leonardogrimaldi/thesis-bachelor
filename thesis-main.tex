@@ -159,45 +159,44 @@ Il punto di partenza per il seguente attacco è nuovamente la barra di ricerca c
 \texttt{routes/search.ts}
 \lstinputlisting[language=JavaScript,label={lst:searchProducts}, caption={Ricerca dei prodotti con query SQL vulnerabile}]{listings/searchProducts.ts}
 \begin{sloppypar}
-In questa funzione che espone l'API di ricerca dei prodotti \texttt{/rest/products/search} è presente codice SQL vulnerabile, legato a un uso non corretto della libreria Sequelize\cite{sequelize}. Sequelize è un ORM (Object-Relational Mapping) per Node.js che consente di interagire con database come MySQL e, in questo caso, SQLite.
+Nella funzione \texttt{searchProducts} che espone l'API di ricerca dei prodotti \texttt{/rest/products/search} è presente codice SQL vulnerabile, legato a un uso non corretto della libreria Sequelize\cite{sequelize}. Sequelize è un ORM (Object-Relational Mapping) per Node.js che consente di interagire con database come MySQL e, in questo caso, SQLite.
 \end{sloppypar}
 \par
 La funzione \texttt{query()}\cite{sequelize-query} consente di passare un parametro stringa contenente la query SQL e restituisce una Promise\cite{mdn-promise} contenente il risultato. La vulnerabilità back-end del sito si trova precisamente nell'utilizzo di questo metodo: gli sviluppatori hanno costruito la stringa SQL in modo dinamico facendo un passaggio di parametro.
-\begin{lstlisting}[language=JavaScript,label={lst:criteria-query}]
+\begin{lstlisting}[language=JavaScript,label={lst:criteria-query}, caption={Interrogazione SQL di ricerca dei prodotti con criterio vulnerabile}]
 models.sequelize.query(`SELECT * FROM Products WHERE ((name LIKE '%${criteria}%' OR description LIKE '%${criteria}%') AND deletedAt IS NULL) ORDER BY name`)
 \end{lstlisting}
 \par
 Nel codice sopra riportato viene mostrata la query di selezione contenente il parametro \texttt{criteria}, ovvero la chiave di ricerca del prodotto. Questo viene fornito usando la formattazione \texttt{`\$\{chiave\}`} che corrisponde al Template Literal\cite{ts-template-literal} di TypeScript. In questo modo la query SQL può essere costruita dinamicamente e in un modo facile, ma rende possibile l'Injection poiché il parametro non viene sanificato. L'utente malizioso, infatti, potrà eseguire un attacco di tipo \texttt{UNION} per ottenere l'intero schema del database!
 \par
-Per procedere alla risoluzione di questo problema è necessario leggere la documentazione\cite{sequelize-raw-queries} di Sequelize ed utilizzare correttamente le funzionalità \textit{Replacements} oppure \textit{Bind Parameter} per eseguire la sanificazione della stringa proveniente dal client ed interagire nel modo più sicuro con il database.
+Per procedere alla risoluzione di questo problema è necessario leggere la documentazione sulle \textit{Raw Queries}\cite{sequelize-raw-queries} di Sequelize ed utilizzare correttamente le funzionalità \textit{Replacements} oppure \textit{Bind Parameter} per eseguire la sanificazione della stringa proveniente dal client ed interagire nel modo più sicuro con il database.
 Usando i \textit{replacements} si crea un formato di rimpiazzamento riscrivendo il blocco \texttt{'\%\$\{criteria\}\%'} con \texttt{:chiave}, formando la query finale in questo modo:
-\begin{lstlisting}[language=SQL,label={lst:criteria-query-vul}]
+\begin{lstlisting}[language=SQL,label={lst:criteria-query-vul}, caption={Query SQL sicura con rimpiazzamento del parametro}]
 SELECT * FROM Products WHERE ((name LIKE :chiave OR description LIKE :chiave) AND deletedAt IS NULL) ORDER BY name
-\end{lstlisting}.
+\end{lstlisting}
 \par
 Successivamente, viene richiamato il parametro nominato \texttt{:chiave} dentro l'oggetto di opzioni passato come secondo parametro a \texttt{query()}. Il risultato sarà di questo tipo:
-\begin{lstlisting}[language=JavaScript,label={lst:criteria-query-fixed}]
+\begin{lstlisting}[language=JavaScript,label={lst:criteria-query-fixed}, caption={Uso di \textit{replacements} per sanificare il parametro di ricerca nel metodo \texttt{query()} di Sequelize}]
 models.sequelize.query(`SELECT * FROM Products WHERE ((name LIKE :chiave OR description LIKE :chiave) AND deletedAt IS NULL) ORDER BY name`, {
     replacements: { chiave: `%${criteria}%` }
 })
 \end{lstlisting}
 \par
-Anche la wildcard \texttt{\%} (che nel \texttt{LIKE} di SQL corrisponde alla ricerca di tutti i pattern con la parola chiave) si trova ora attorno alla variabile \texttt{criteria}.
-\par
-Proseguendo, viene eseguito il testing di Injection per assicurarsi che la vulnerabilità sia stata corretta:
-\begin{figure}
+Anche la wildcard \texttt{\%} (che nel \texttt{LIKE} di SQL corrisponde alla ricerca di tutti i pattern con la parola chiave) si trova ora attorno alla variabile \texttt{criteria}. Proseguendo, viene eseguito il testing di Injection per assicurarsi che la vulnerabilità sia stata corretta:
+\begin{figure}[h]
     \centering
     \includegraphics[width=.8\linewidth]{figures/rest-search-injection-union-after.png}
     \caption{Tentativo di Injection con UNION a \texttt{rest/search?q=} da browser e visualizzazione richiesta in ZAP}
     \label{fig:rest-search-injection-union-after}
 \end{figure}
 \par
-Il payload \lstinline{test')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_master--} che in precedenza restituiva l'intero schema SQLite ora restituisce un array vuoto.
+Il payload \lstinline{test')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_master--} che in precedenza poteva restituire l'intero schema SQLite ora restituisce un array vuoto. La \cref{fig:rest-search-injection-union-after} mostra la risposta JSON del server dopo che si è inviata la richiesta di ricerca con il payload di Injection. La vulnerabilità è stata così risolta.
 \section{Broken Access Control}
+Durante lo sviluppo di un web server è importante definire i permessi di accesso alle risorse ai soli utenti abilitati a utilizzarle. Per un sistema complesso è comune dimenticarsi di disabilitare gli accessi ad alcune interfacce, esponendole ad attacchi dove un hacker può modificare dati sensibili o eseguire operazioni non autorizzate. In questa sezione viene mostrato un esempio di questo tipo di vulnerabilità e le conseguenze.
 \subsection{Manomissione dei prodotti}
 \texttt{server.ts}
 \par
-Il file \texttt{server.ts} è il punto di entrata principale invocato all'avvio dell'applicazione Node.js. Contiene la procedura \texttt{start()} che inizializza i servizi di WebSocket riguardanti le notifiche, le metriche di Prometheus e assegna la porta di ascolto del server. Inoltre, fa uso di **ExpressJS** per impostare gli endpoint API personalizzati. Riunisce tutte le componenti del back-end per offrire indirizzi URL all'utente finale che potrà interagire ed usufruire dei servizi esposti.
+Il file \texttt{server.ts} è il punto di entrata principale invocato all'avvio dell'applicazione Node.js. Contiene la procedura \texttt{start()} che inizializza i servizi di WebSocket riguardanti le notifiche, le metriche di Prometheus e assegna la porta di ascolto del server. Inoltre, fa uso di ExpressJS per impostare gli endpoint API personalizzati. Riunisce tutte le componenti del back-end per offrire indirizzi URL all'utente finale che potrà interagire e usufruire dei servizi esposti.
 \begin{lstlisting}[language=JavaScript,label={lst:server-start}]
 /* Baskets: Unauthorized users are not allowed to access baskets */
 app.use('/rest/basket', security.isAuthorized(), security.appendUserId())
@@ -210,22 +209,22 @@ app.post('/api/Products', security.isAuthorized())
 app.delete('/api/Products/:id', security.denyAll())
 \end{lstlisting}
 \par
-Il codice sopraesposto mostra come \texttt{app} viene invocato per creare gli endpoint API e abilitare le richieste con metodi HTTP come \texttt{GET}, \texttt{POST}, \texttt{PUT}, \texttt{DELETE} a indirizzi personalizzati. Il secondo parametro delle funzioni in \texttt{app} riceve generalmente la funzione di *callback*. Questa viene utilizzata per elaborare le richieste e, nel caso più specifico, confermare l'identità dell'utente per determinarne i suoi permessi. Essa viene denominata *middleware function*, poiché agisce da tramite tra la richiesta e la risposta, gestendo l'autenticazione, il logging o gli errori.
+Il codice sopraesposto mostra come \texttt{app} viene invocato per creare gli endpoint API e abilitare le richieste con metodi HTTP come \texttt{GET}, \texttt{POST}, \texttt{PUT}, \texttt{DELETE} a indirizzi personalizzati. Il secondo parametro delle funzioni in \texttt{app} riceve generalmente la funzione di \textit{callback}. Questa viene utilizzata per elaborare le richieste e, nel caso più specifico, confermare l'identità dell'utente per determinarne i suoi permessi. Essa viene denominata \textit{middleware function}, poiché agisce da tramite tra la richiesta e la risposta, gestendo l'autenticazione, il logging o gli errori.
 \par
-In questo semplice caso, gli sviluppatori si sono dimenticati di assegnare i controlli di sicurezza sulla richiesta HTTP PUT di \texttt{/api/Products/:id}, consentendo a **tutti** gli utenti di modificare i prodotti a proprio piacimento. In questo modo, oltre a interrompere un servizio e procurare danno finanziario, l'utente malizioso potrebbe iniettare un payload XSS, inserendo script arbitrari nelle descrizioni dei prodotti.
+In questo semplice caso, gli sviluppatori si sono dimenticati di assegnare i controlli di sicurezza sulla richiesta HTTP PUT di \texttt{/api/Products/:id}, consentendo a \textbf{tutti} gli utenti di modificare i prodotti a proprio piacimento. In questo modo, oltre a interrompere un servizio e procurare danno finanziario, l'utente malizioso potrebbe iniettare un payload XSS, inserendo script arbitrari nelle descrizioni dei prodotti.
 \par
-Inoltre, se il middleware conteneva un controllo dei limiti (rate-limiting), con una sola riga mancante si espone il server a un attacco DoS (Denial-of-Service).
+Inoltre, se il \textit{middleware} conteneva un controllo dei limiti (rate-limiting, ovvero la limitazione del numero di richieste in un intervallo di tempo), con una sola riga mancante si espone il server a un attacco DoS (Denial-of-Service).
 \par
 Per risolvere questa vulnerabilità occorre aggiungere il seguente blocco dentro \texttt{server.ts}:
-\begin{lstlisting}[language=JavaScript,label={lst:server-start-fixed}]
+\begin{lstlisting}[language=JavaScript,label={lst:server-start-fixed}, caption={Controllo di accesso per l'endpoint \texttt{/api/Products}}]
 app.route('/api/Products')
-.post(security.isAuthorized())
-.put(security.denyAll())
-.delete(security.denyAll())
+  .post(security.isAuthorized())
+  .put(security.denyAll())
+  .delete(security.denyAll())
 app.route('/api/Products/:id')
-.post(security.isAuthorized())
-.put(security.denyAll())
-.delete(security.denyAll())
+  .post(security.isAuthorized())
+  .put(security.denyAll())
+  .delete(security.denyAll())
 \end{lstlisting}
 \par
 I servizi di \texttt{PUT} e \texttt{DELETE} vengono così rifiutati, mentre per il POST è necessario un header di autenticazione; \texttt{GET} resta abilitato normalmente per tutti. L'applicazione così modificata si rende più sicura.
