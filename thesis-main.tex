@@ -235,6 +235,7 @@ I servizi di \texttt{PUT} e \texttt{DELETE} vengono così rifiutati, mentre per 
     \label{fig:api-products-put-after}
 \end{figure}
 \section{Security Misconfiguration}
+Un'impostazione errata dei servizi web può portare a gravi falle di sicurezza, come l'esecuzione di codice remoto. In questa sezione viene mostrato un esempio di vulnerabilità legata al caricamento di file non sicuri che deriva da una cattiva configurazione del server.
 \subsection{Interfaccia deprecata}
 \texttt{routes/fileUpload.ts}, \texttt{server.ts}
 \par
@@ -248,7 +249,9 @@ Su questa API vengono eseguite diverse funzioni *middleware*. Innanzitutto viene
 const uploadToMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200000 } })
 \end{lstlisting}
 \par
-La seconda funzione \texttt{ensureFileIsPassed} controlla la presenza del file, assicurando che non sia nullo. La terza (\texttt{metrics.observeFileUploadMetricsMiddleware()}) riguarda le metriche di *Prometheus* ed esegue il logging del tipo di file oppure il conteggio di upload erronei.
+La seconda funzione \texttt{ensureFileIsPassed} controlla la presenza del file, assicurando che non sia nullo.
+\par
+La terza (\texttt{metrics.observeFileUploadMetricsMiddleware()}) riguarda le metriche di Prometheus ed esegue il logging del tipo di file oppure il conteggio di upload erronei.
 \begin{lstlisting}[language=JavaScript,label={lst:observe-file-upload-metrics}]
 export function observeFileUploadMetricsMiddleware () {
   return ({ file }: Request, res: Response, next: NextFunction) => {
@@ -264,9 +267,9 @@ export function observeFileUploadMetricsMiddleware () {
 \par
 Le successive funzioni riguardano la elaborazione di file specifici con estensione \texttt{.zip}, \texttt{.xml} e \texttt{yaml}. In tutto questo, si può notare la mancanza di un'importante funzione prottetiva: il controllo sul tipo di estensioni (Nel codice è già presente la funzione \texttt{checkFileType}, ma questa serve semplicemente per segnare il completamento della challenge. In un caso reale si può presuppore che i developer si siano dimenticati di eseguire il controllo oppure l'hanno realizzato male, poiché non comporta un semplice controllo della stringa di estensione). Nel Frontend di Angular è presente un controllo sul tipo di estensione, nello specifico in \texttt{frontend/src/app/complaint/complaint.component.ts}, ma occorre prestare attenzione poiché è codice lato client che può essere modificato o immediatamente aggirato intercettando la richiesta API con OWASP ZAP.
 \par
-Si sposta l'attenzione quindi su \texttt{routes/fileUpload.ts} dove si modificherà la funzione \texttt{checkFileType}. Si potrebbe molto facilmente pensare di usare il parametro \texttt{.mimetype} di un oggetto \texttt{Multer.File}, ma questo **non** è sicuro, poiché fa riferimento al header che viene inviato nella richiesta, che può essere intercettato dall'utente.
+Si sposta l'attenzione quindi su \texttt{routes/fileUpload.ts} dove si modificherà la funzione \texttt{checkFileType}. Si potrebbe molto facilmente pensare di usare il parametro \texttt{.mimetype} di un oggetto \texttt{Multer.File}, ma questo \textbf{non} è sicuro, poiché fa riferimento al header che viene inviato nella richiesta, che può essere intercettato dall'utente.
 \par
-Per eseguire un check sicuro occorre leggere il file per trovare il *magic number*, ovvero un codice specifico che identifica il contenuto del file. Su *Node.JS* questo viene eseguito con la funzione \texttt{fromBuffer} o \texttt{fileTypeFromBuffer} importata dal package \texttt{file-type}. Successivamente, si tratta semplicemente di controllare che il tipo ritornato sia incluso in quelli consentiti e in caso contrario ritornare un messaggio di errore.
+Per eseguire un check sicuro occorre leggere il file per trovare il \textit{magic number}, ovvero un codice specifico che identifica il contenuto del file. Su Node.JS questo viene eseguito con la funzione \texttt{fromBuffer} o \texttt{fileTypeFromBuffer} importata dal package \texttt{file-type}. Successivamente, si tratta semplicemente di controllare che il tipo ritornato sia incluso in quelli consentiti e in caso contrario ritornare un messaggio di errore.
 \begin{lstlisting}[language=JavaScript,label={lst:check-file-type-fixed}]
 import { fromBuffer } from 'file-type'
 async function checkFileType ({ file }: Request, res: Response, next: NextFunction) {
