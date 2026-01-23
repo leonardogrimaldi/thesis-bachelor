@@ -31,7 +31,11 @@
 \acrodef{PWA}{Progressive Web Application}
 \acrodef{XSS}{Cross-Site Scripting}
 \acrodef{SQL}{Structured Query Language}
-
+\acrodef{XXE}{XML External Entity}
+\acrodef{API}{Application Programming Interface}
+\acrodef{REST}{Representational State Transfer}
+\acrodef{HTTP}{HyperText Transfer Protocol}
+\acrodef{ZAP}{Zed Attack Proxy}
 \mainlinespacing{1.241} % line spacing in mainmatter, comment to default (1)
 
 \begin{document}
@@ -86,6 +90,40 @@ you may need both \ac{vm} and \acp{vm}.
 \note{At the end, describe the structure of the paper}
 
 \chapter{Background}
+\section{API REST}
+Le \textbf{\ac{API}} sono un insieme di regole e protocolli che consentono la comunicazione tra servizi o programmi. Nell'ambito web un software che utilizza le \ac{API} è sicuramente il browser che continuamente scambia informazioni con i siti web per mostrare contenuti all'utente. Per far fronte alla complessità del Web è stato introdotto lo stile architetturale \textbf{\ac{REST}} che impone nuove condizioni sulle \ac{API} per renderne più semplice l'utilizzo. Alcune di queste sono:
+\begin{itemize}
+    \item \textbf{Client-Server}: l'utente (client) richiede servizi al server tramite richieste \ac{HTTP}
+    \item \textbf{Stateless}: le richieste sono indipendenti e contengono tutte le informazioni necessarie per essere elaborate
+    \item \textbf{Uniform Interface}: si addotta un formato standard di comunicazione, indipendente dal programma
+    \item \textbf{Cacheable}: le risposte del server devono essere constrassegnate come memorizzabili o non memorizzabili nella cache del client
+\end{itemize}
+Nell'analisi di sicurezza di un applicazione la esposizione di \ac{API} è il modo principale per l'individuazione di vulnerabilità. L'architettura client-server del primo punto rende possibile l'interazione tra un utente malintenzionato e il server con i metodi \ac{HTTP} \texttt{GET}, \texttt{POST}, \texttt{PUT}, \texttt{DELETE} che devono essere gestiti in modo appropriato per evitare che l'utente legga o modifichi dati sensibili. La \cref{fig:rest-api-diagram} mostra le interazioni tra il client (computer) e le REST API del server tramite le richieste elencate prima. Si noti la presenza del database, che non viene raggiunto direttamente dal client e il formato \textit{JSON} o \textit{XML} usato per la risposta del server.
+\begin{figure}
+  \centering
+  \copyrightbox[b]{\includegraphics[width=.8\linewidth]{figures/Rest-API-2.png}}{Autore: Seobility - Licenza: CC BY-SA 4.0\cite{seobility-license}}
+  \caption{Diagramma delle interazioni tra i vari attori in un'architettura REST.\cite{seobility-rest-api}}
+  \label{fig:rest-api-diagram}
+\end{figure}
+\par
+La proprietà stateless del secondo punto mostra un problema di sicurezza molto diffuso: se i servizi devono avere un permesso specifico, tutte le richieste \ac{HTTP} devono essere accompagnate da una chiave di sicurezza o token per autenticare ed autorizzarne l'uso. Poiché il server non può inferire l'identità del client da richieste precedenti, è necessario che ogni richiesta contenga le credenziali di accesso. Tuttavia, nello sviluppo delle \ac{API} è comune dimenticare di implementare questi controlli di accesso, esponendo il server a vulnerabilità di \textit{Broken Access Control}. La sezione \ref{subsec:manomissione-dei-prodotti} mostra un esempio di questo tipo di vulnerabilità tramite API e descrive alcune conseguenze legate a essa.
+\section{OWASP TOP 10}
+La lista OWASP TOP 10 è il riferimento principale per le vulnerabilità web più comuni ed è gestita dal team \ac{OWASP}. È stata ampiamente utilizzata per la ricerca di vulnerabilità e la loro risoluzione in questa tesi.
+\section{Zed Attack Proxy (ZAP)}
+La \ac{ZAP} è uno strumento fondamentale per la verifica di sicurezza delle applicazioni web. Funziona come proxy tra il browser e il server web, consentendo di intercettare, modificare e analizzare le richieste e le risposte HTTP. Tra le sue funzionalità principali vi sono:
+\begin{itemize}
+    \item Intercettazione delle richieste e risposte HTTP
+    \item Scansione automatica delle vulnerabilità
+    \item Analisi delle sessioni e gestione dei cookie
+    \item Fuzzing delle richieste per individuare vulnerabilità
+\end{itemize}
+\begin{figure}
+  \centering
+  \includegraphics[width=.8\linewidth]{figures/zap-main-window.png}
+  \caption{Finestra principale di ZAP con la lista delle richieste intercettate e il pannello di analisi della richiesta selezionata.}
+  \label{fig:zap-main-window}
+\end{figure}
+In questa tesi si è fatto uso principalmente della intercettazione delle richieste e risposte. La sezione \ref{subsec:interfaccia-deprecata} mostra un esempio di come ZAP sia stato utilizzato per intercettare una richiesta di caricamento file e modificarne il contenuto per testare la vulnerabilità di \textit{Security Misconfiguration}. La \cref{fig:complaint-txt-zip-response} mostra come con ZAP sia possibile modificare una richiesta HTTP per inviare un file di tipo non consentito e sfruttare una vulnerabilità API del server.
 \chapter{State of the art}
 
 \section{Applicazione vulnerabile}
@@ -194,10 +232,11 @@ Il payload \lstinline{test')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_maste
 \section{Broken Access Control}
 Durante lo sviluppo di un web server è importante definire i permessi di accesso alle risorse ai soli utenti abilitati a utilizzarle. Per un sistema complesso è comune dimenticarsi di disabilitare gli accessi ad alcune interfacce, esponendole ad attacchi dove un hacker può modificare dati sensibili o eseguire operazioni non autorizzate. In questa sezione viene mostrato un esempio di questo tipo di vulnerabilità e le conseguenze.
 \subsection{Manomissione dei prodotti}
+\label{subsec:manomissione-dei-prodotti}
 \texttt{server.ts}
 \par
 Il file \texttt{server.ts} è il punto di entrata principale invocato all'avvio dell'applicazione Node.js. Contiene la procedura \texttt{start()} che inizializza i servizi di WebSocket riguardanti le notifiche, le metriche di Prometheus e assegna la porta di ascolto del server. Inoltre, fa uso di ExpressJS per impostare gli endpoint API personalizzati. Riunisce tutte le componenti del back-end per offrire indirizzi URL all'utente finale che potrà interagire e usufruire dei servizi esposti.
-\begin{lstlisting}[language=JavaScript,label={lst:server-start}]
+\begin{lstlisting}[language=JavaScript,label={lst:server-start}, caption={Assegnazione degli endpoint API e relative funzioni \textit{middleware} di sicurezza}]
 /* Baskets: Unauthorized users are not allowed to access baskets */
 app.use('/rest/basket', security.isAuthorized(), security.appendUserId())
 /* BasketItems: API only accessible for authenticated users */
@@ -237,14 +276,16 @@ I servizi di \texttt{PUT} e \texttt{DELETE} vengono così rifiutati, mentre per 
 \section{Security Misconfiguration}
 Un'impostazione errata dei servizi web può portare a gravi falle di sicurezza, come l'esecuzione di codice remoto. In questa sezione viene mostrato un esempio di vulnerabilità legata al caricamento di file non sicuri che deriva da una cattiva configurazione del server.
 \subsection{Interfaccia deprecata}
+\label{subsec:interfaccia-deprecata}
 \texttt{routes/fileUpload.ts}, \texttt{server.ts}
 \par
+La pagina di invio reclami \texttt{/complaint} (\cref{fig:complaint-txt-zip-payload}) consente agli utenti di allegare file di tipo \texttt{.pdf}, \texttt{.zip} (da front end). Tuttavia, intercettando la richiesta è possibile modificare il file allegato con uno di tipo diverso, come \texttt{.txt.zip}, aggirando il controllo sul front end. Questo perché il server non esegue un controllo sul tipo di estensione del file caricato, consentendo così l'upload di file non sicuri.
 All'interno di \texttt{server.ts} si può notare la presenza dell'interfaccia di caricamento dei file su indirizzo \texttt{/file-upload}:
 \begin{lstlisting}[language=JavaScript,label={lst:file-upload-server}]
 app.post('/file-upload', uploadToMemory.single('file'), ensureFileIsPassed, metrics.observeFileUploadMetricsMiddleware(), handleZipFileUpload, handleXmlUpload, handleYamlUpload)
 \end{lstlisting}
 \par
-Su questa API vengono eseguite diverse funzioni *middleware*. Innanzitutto viene chiamata \texttt{uploadToMemory.single('file')} la quale esegue il caricamento del file nel buffer di memoria volatile, tramite la libreria \texttt{multer} di *Node.JS*, e aggiunge un limite di dimensione.
+Su questa API vengono eseguite diverse funzioni \textit{middleware}. Innanzitutto viene chiamata \texttt{uploadToMemory.single('file')} la quale esegue il caricamento del file nel buffer di memoria volatile, tramite la libreria \texttt{multer} di Node.JS, e aggiunge un limite di dimensione.
 \begin{lstlisting}[language=JavaScript,label={lst:upload-to-memory}]
 const uploadToMemory = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200000 } })
 \end{lstlisting}
@@ -265,12 +306,12 @@ export function observeFileUploadMetricsMiddleware () {
 }
 \end{lstlisting}
 \par
-Le successive funzioni riguardano la elaborazione di file specifici con estensione \texttt{.zip}, \texttt{.xml} e \texttt{yaml}. In tutto questo, si può notare la mancanza di un'importante funzione prottetiva: il controllo sul tipo di estensioni (Nel codice è già presente la funzione \texttt{checkFileType}, ma questa serve semplicemente per segnare il completamento della challenge. In un caso reale si può presuppore che i developer si siano dimenticati di eseguire il controllo oppure l'hanno realizzato male, poiché non comporta un semplice controllo della stringa di estensione). Nel Frontend di Angular è presente un controllo sul tipo di estensione, nello specifico in \texttt{frontend/src/app/complaint/complaint.component.ts}, ma occorre prestare attenzione poiché è codice lato client che può essere modificato o immediatamente aggirato intercettando la richiesta API con OWASP ZAP.
+Le successive funzioni riguardano la elaborazione di file specifici con estensione \texttt{.zip}, \texttt{.xml} e \texttt{yaml}. In tutto questo, si può notare la \textbf{mancanza} di un'importante funzione protettiva: il controllo sul tipo di estensioni (Nel codice è già presente la funzione \texttt{checkFileType}, ma questa serve semplicemente per segnare il completamento della challenge. In un caso reale si può presupporre che i developer si siano dimenticati di eseguire il controllo oppure l'hanno realizzato male, poiché non comporta un semplice controllo della stringa di estensione). Nel Frontend di Angular è presente un controllo sul tipo di estensione, nello specifico in \texttt{frontend/src/app/complaint/complaint.component.ts}, ma occorre prestare attenzione poiché è codice lato client che può essere modificato o immediatamente aggirato intercettando la richiesta API con OWASP ZAP.
 \par
 Si sposta l'attenzione quindi su \texttt{routes/fileUpload.ts} dove si modificherà la funzione \texttt{checkFileType}. Si potrebbe molto facilmente pensare di usare il parametro \texttt{.mimetype} di un oggetto \texttt{Multer.File}, ma questo \textbf{non} è sicuro, poiché fa riferimento al header che viene inviato nella richiesta, che può essere intercettato dall'utente.
 \par
-Per eseguire un check sicuro occorre leggere il file per trovare il \textit{magic number}, ovvero un codice specifico che identifica il contenuto del file. Su Node.JS questo viene eseguito con la funzione \texttt{fromBuffer} o \texttt{fileTypeFromBuffer} importata dal package \texttt{file-type}. Successivamente, si tratta semplicemente di controllare che il tipo ritornato sia incluso in quelli consentiti e in caso contrario ritornare un messaggio di errore.
-\begin{lstlisting}[language=JavaScript,label={lst:check-file-type-fixed}]
+Per eseguire un check \textbf{sicuro} occorre leggere il file per trovare il \textit{magic number}, ovvero un codice specifico che identifica il contenuto del file. Su Node.JS questo viene eseguito con la funzione \texttt{fromBuffer} o \texttt{fileTypeFromBuffer} importata dal package \texttt{file-type}. Successivamente, si tratta semplicemente di controllare che il tipo ritornato sia incluso in quelli consentiti e in caso contrario ritornare un messaggio di errore.
+\begin{lstlisting}[language=JavaScript,label={lst:check-file-type-fixed}, caption={Funzione di controllo del tipo di file caricato}]
 import { fromBuffer } from 'file-type'
 async function checkFileType ({ file }: Request, res: Response, next: NextFunction) {
   try {
@@ -289,7 +330,7 @@ async function checkFileType ({ file }: Request, res: Response, next: NextFuncti
 \end{lstlisting}
 \par
 Infine, si aggiorna \texttt{server.ts} per includere la funzione appena creata:
-\begin{lstlisting}[language=JavaScript,label={lst:file-upload-server-fixed}]
+\begin{lstlisting}[language=JavaScript,label={lst:file-upload-server-fixed}, caption={Endpoint di caricamento file con controllo del tipo di estensione \texttt{checkFileType}}]
 app.post('/file-upload', uploadToMemory.single('file'), ensureFileIsPassed, checkFileType, metrics.observeFileUploadMetricsMiddleware(), handleZipFileUpload, handleXmlUpload, handleYamlUpload)
 \end{lstlisting}
 \par
@@ -307,24 +348,20 @@ Ora, quando si tenta di caricare un file malevolo come \texttt{test.txt.zip} gi�
     \label{fig:complaint-txt-zip-response}
 \end{figure}
 \par
-L'ultimo procedimento da fare per completare la contromisura è quello di disabilitare effettivamente l'interfaccia deprecata. Nella funzione iniziale di \texttt{app.post('file-upload', ...)} si è potuto osservare la presenza di \texttt{handleXmlUpload} e \texttt{handleYamlUpload} che però internamente risultano deprecate per motivi di sicurezza. Questo perché entrambi sono esposti ad attacchi \texttt{XXE} che consentono di eseguire \texttt{Server-Side Request Forgery} e letture di file.
+L'ultimo procedimento da fare per completare la contromisura è quello di disabilitare effettivamente l'interfaccia deprecata. Nel \cref{lst:check-file-type-fixed} si può osservare la presenza di \texttt{handleXmlUpload} e \texttt{handleYamlUpload} che però internamente risultano deprecate per motivi di sicurezza. Questo perché entrambi sono esposti ad attacchi \ac{XXE} che consentono di eseguire \texttt{Server-Side Request Forgery} e letture di file, tramite payload specifici dentro file XML.
 \par
-Per disabilitarle, si possono effettivamente eliminare le funzioni di handling da \texttt{app.post()} formando così la istruzione finale:
-\begin{lstlisting}[language=JavaScript,label={lst:file-upload-server-final}]
+Per disabilitarle, si possono effettivamente eliminare le funzioni di gestione di queste due estensioni da \texttt{app.post()} formando così la istruzione finale:
+\begin{lstlisting}[language=JavaScript,label={lst:file-upload-server-final}, caption={Endpoint di caricamento file dopo la rimozione delle interfacce deprecate}]
 app.post('/file-upload', uploadToMemory.single('file'), ensureFileIsPassed, metrics.observeFileUploadMetricsMiddleware(), checkUploadSize, checkFileType, handleZipFileUpload)
 \end{lstlisting}
 Il server ora non effettua più il parsing di codice \texttt{XML} o \texttt{YAML}. In più, dentro la funzione \texttt{checkFileType} precedentemente scritta si tolgono le due estensioni non più consentite:
 \begin{lstlisting}[language=JavaScript]
 const allowedTypes = ['application/pdf', 'application/zip']
 \end{lstlisting}
-Finalmente, il lavoro di patching è terminato a buon fine e l'API \texttt{/file-upload} non è più vulnerabile a \texttt{XXE} e \texttt{Unrestricted File Upload}. 
+Per confermare la risoluzione della falla di sicurezza, si tenta di caricare un file \texttt{test.xml.zip} e la risposta del server è un codice \texttt{HTTP 415}, come mostrato in \cref{fig:complaint-txt-zip-response}. Finalmente, il lavoro di patching è terminato a buon fine e l'API \texttt{/file-upload} non è più vulnerabile a \textit{XXE} e \textit{Unrestricted File Upload}.
 
-
-You may also put some code snippet (which is NOT float by default), eg: \cref{lst:random-code}.
-
-\lstinputlisting[float,language=Java,label={lst:random-code}]{listings/HelloWorld.java}
-
-\section{Fancy formulas here}
+\chapter{Conclusioni}
+Conclusion chapter should point out: (1) Briefly recall problem, starting point and methods adopted, (2) Briefly report Findings, (3) Briefly discuss benefits/limitations, (4) Discuss Future Work
 
 %----------------------------------------------------------------------------------------
 % BIBLIOGRAPHY
