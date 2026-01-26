@@ -108,7 +108,11 @@ Nell'analisi di sicurezza di un applicazione la esposizione di \ac{API} è il mo
 \par
 La proprietà stateless del secondo punto mostra un problema di sicurezza molto diffuso: se i servizi devono avere un permesso specifico, tutte le richieste \ac{HTTP} devono essere accompagnate da una chiave di sicurezza o token per autenticare ed autorizzarne l'uso. Poiché il server non può inferire l'identità del client da richieste precedenti, è necessario che ogni richiesta contenga le credenziali di accesso. Tuttavia, nello sviluppo delle \ac{API} è comune dimenticare di implementare questi controlli di accesso, esponendo il server a vulnerabilità di \textit{Broken Access Control}. La sezione \ref{subsec:manomissione-dei-prodotti} mostra un esempio di questo tipo di vulnerabilità tramite API e descrive alcune conseguenze legate a essa.
 \section{OWASP TOP 10}
-La lista OWASP TOP 10 è il riferimento principale per le vulnerabilità web più comuni ed è gestita dal team \ac{OWASP}. È stata ampiamente utilizzata per la ricerca di vulnerabilità e la loro risoluzione in questa tesi.
+La lista OWASP TOP 10 è il riferimento centrale per le vulnerabilità web più comuni ed è gestita dal team \ac{OWASP}. È stata ampiamente utilizzata per la ricerca di vulnerabilità e la loro risoluzione in questa tesi. Essa contiene dieci delle più comuni categorie di vulnerabilità web. Tra queste, le più rilevanti per questa tesi sono:
+\subsection{Broken Access Control}
+Il \textbf{controllo degli accessi} è un processo di verifica che consente al server di determinare i permessi di accesso alle risorse. Coinvolge i due più importanti metodi di verifica dell'identità, ovvero l'\textbf{autenticazione} e l'\textbf{autorizzazione}. Il primo consiste nel verificare l'identità dell'utente tramite credenziali di accesso mentre il secondo di assegnare i permessi all'utente associato. Per esempio, per accedere a una pagina riservata come la lista di utenti registrati, è norma chiedere l'accesso tramite un username e password. Similmente, l'accesso a un endpoint API riservato richiederebbe un token di autenticazione, come un \textit{JSON Web Token} (JWT) dentro all'header di autenticazione della richiesta HTTP\cite{mdn-authorization-header}.
+\subsection{Injection}
+\subsection{Security Misconfiguration}
 \section{Zed Attack Proxy (ZAP)}
 La \ac{ZAP} è uno strumento fondamentale per la verifica di sicurezza delle applicazioni web. Funziona come proxy tra il browser e il server web, consentendo di intercettare, modificare e analizzare le richieste e le risposte HTTP. Tra le sue funzionalità principali vi sono:
 \begin{itemize}
@@ -123,8 +127,9 @@ La \ac{ZAP} è uno strumento fondamentale per la verifica di sicurezza delle app
   \caption{Finestra principale di ZAP con la lista delle richieste intercettate e il pannello di analisi della richiesta selezionata.}
   \label{fig:zap-main-window}
 \end{figure}
-In questa tesi si è fatto uso principalmente della intercettazione delle richieste e risposte. La sezione \ref{subsec:interfaccia-deprecata} mostra un esempio di come ZAP sia stato utilizzato per intercettare una richiesta di caricamento file e modificarne il contenuto per testare la vulnerabilità di \textit{Security Misconfiguration}. La \cref{fig:complaint-txt-zip-response} mostra come con ZAP sia possibile modificare una richiesta HTTP per inviare un file di tipo non consentito e sfruttare una vulnerabilità API del server.
-\chapter{State of the art}
+In questa tesi si è fatto uso principalmente della intercettazione delle richieste e risposte. Nella \cref{fig:zap-main-window} viene mostrata la schermata principale di ZAP, con la cronologia delle richieste HTTP effettuate dal browser nella finestra inferiore e al centro il pannello di analisi della richiesta selezionata, da cui è possibile modificare i parametri prima di inviarla nuovamente al server con il click destro.
+La sezione \ref{subsec:interfaccia-deprecata} mostra un esempio di come ZAP sia stato utilizzato per intercettare una richiesta di caricamento file e modificarne il contenuto per testare la vulnerabilità di \textit{Security Misconfiguration}. La \cref{fig:complaint-txt-zip-response} mostra come con ZAP sia possibile modificare una richiesta HTTP per inviare un file di tipo non consentito e sfruttare una vulnerabilità API del server.
+\chapter{State of the art/ Analisi del dominio}
 
 \section{Applicazione vulnerabile}
 Prima ancora di incominciare la valutazione di sicurezza è necessario scegliere un sito web vulnerabile. In rete sono presenti una vasta gamma di applicazioni per la simulazione di attacchi informatici, come \ac{DVWA}\cite{dvwa-github} (basato su PHP) e OWASP Juice Shop\cite{owasp-juice-shop} (basato su Node.js). In questa tesi si è scelto di utilizzare quest'ultima per modernità di tecnologie e aggiornamenti.
