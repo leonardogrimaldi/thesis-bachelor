@@ -109,7 +109,14 @@ Nell'analisi di sicurezza di un applicazione la esposizione di \ac{API} è il mo
 \par
 La proprietà stateless del secondo punto mostra un problema di sicurezza molto diffuso: se i servizi devono avere un permesso specifico, tutte le richieste \ac{HTTP} devono essere accompagnate da una chiave di sicurezza o token per autenticare ed autorizzarne l'uso. Poiché il server non può inferire l'identità del client da richieste precedenti, è necessario che ogni richiesta contenga le credenziali di accesso. Tuttavia, nello sviluppo delle \ac{API} è comune dimenticare di implementare questi controlli di accesso, esponendo il server a vulnerabilità di \textit{Broken Access Control}. La sezione \ref{subsec:manomissione-dei-prodotti} mostra un esempio di questo tipo di vulnerabilità tramite API e descrive alcune conseguenze legate a essa.
 \section{OWASP TOP 10}
-La lista OWASP TOP 10 è il riferimento centrale per le vulnerabilità web più comuni ed è gestita dal team \ac{OWASP}. È stata ampiamente utilizzata per la ricerca di vulnerabilità e la loro risoluzione in questa tesi. Essa contiene dieci delle più comuni categorie di vulnerabilità web. Tra queste, le più rilevanti per questa tesi sono:
+La lista OWASP TOP 10\cite{owasp-top-10} è il riferimento centrale per le vulnerabilità web più comuni ed è gestita dal team \ac{OWASP}. È stata ampiamente utilizzata per la ricerca di vulnerabilità e la loro risoluzione in questa tesi. Essa contiene dieci delle più comuni categorie di vulnerabilità web, classificate tramite dati raccolti da aziende, organizzazioni e anche sondaggi. La lista viene aggiornata ogni quattro anni e la \cref{fig:owasp-10-list-2025} mostra i cambiamenti dalla scorsa edizione 2021, dove si noti il Broken Access Control è rimasto al primo posto.
+\begin{figure}
+  \centering
+  \copyrightbox[b]{\includegraphics[width=.8\linewidth]{figures/2025-mappings.png}}{© Copyright 2021-2025 - OWASP Top 10 Team - Licenza Creative Commons Attribution 3.0 Unported License\cite{cc-attribution-3.0-unported}}
+  \caption{Cambiamenti di classifica delle vulnerabilità web più comuni tra gli anni 2021 e 2025\cite{owasp-top-10-introduction}}
+  \label{fig:owasp-10-list-2025}
+\end{figure}
+Per questa tesi si è scelto per rilevanza di analizzare le categorie descritte nelle seguenti sottosezioni.
 \subsection{Broken Access Control}
 Il \textbf{controllo degli accessi} è un processo di verifica che consente al server di determinare i permessi di accesso alle risorse. Coinvolge i due più importanti metodi di verifica dell'identità, ovvero l'\textbf{autenticazione} e l'\textbf{autorizzazione}. Il primo consiste nel verificare l'identità dell'utente tramite credenziali di accesso mentre il secondo di assegnare i permessi all'utente associato. Per esempio, per accedere a una pagina riservata come la lista di utenti registrati, è norma chiedere l'accesso tramite un username e password. Similmente, l'accesso a un endpoint API riservato richiederebbe un token di autenticazione, come un \textit{JSON Web Token} (JWT) dentro all'header di autenticazione della richiesta HTTP\cite{mdn-authorization-header}.
 \begin{figure}
