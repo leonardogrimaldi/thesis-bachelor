@@ -111,7 +111,24 @@ La proprietà stateless del secondo punto mostra un problema di sicurezza molto 
 La lista OWASP TOP 10 è il riferimento centrale per le vulnerabilità web più comuni ed è gestita dal team \ac{OWASP}. È stata ampiamente utilizzata per la ricerca di vulnerabilità e la loro risoluzione in questa tesi. Essa contiene dieci delle più comuni categorie di vulnerabilità web. Tra queste, le più rilevanti per questa tesi sono:
 \subsection{Broken Access Control}
 Il \textbf{controllo degli accessi} è un processo di verifica che consente al server di determinare i permessi di accesso alle risorse. Coinvolge i due più importanti metodi di verifica dell'identità, ovvero l'\textbf{autenticazione} e l'\textbf{autorizzazione}. Il primo consiste nel verificare l'identità dell'utente tramite credenziali di accesso mentre il secondo di assegnare i permessi all'utente associato. Per esempio, per accedere a una pagina riservata come la lista di utenti registrati, è norma chiedere l'accesso tramite un username e password. Similmente, l'accesso a un endpoint API riservato richiederebbe un token di autenticazione, come un \textit{JSON Web Token} (JWT) dentro all'header di autenticazione della richiesta HTTP\cite{mdn-authorization-header}.
+\begin{figure}
+  \centering
+  \includegraphics[width=.8\linewidth]{figures/authorization-bearer-example.png}
+  \caption{Richiesta API a \texttt{/rest/basket/6} con Authorization header a riga 6}
+  \label{fig:authorization-bearer-example}
+\end{figure}
+\par
+Quando la pagina o l'API non effettua un controllo di sicurezza adeguato e consente l'accesso a utenti non autorizzati, si parla di \textbf{Broken Access Control}. La \cref{fig:authorization-bearer-example} mostra un esempio di richiesta API con header di autorizzazione contenente un token JWT. Se il server non verifica la validità del token e consente l'accesso a utenti non autorizzati, si configura una vulnerabilità di Broken Access Control.
+\par
+Le vulnerabilità Broken Access Control si trovano al primo posto nella lista poiché sono le più comuni e relativamente facili da sfruttare e concedono accesso potenziale a infrastrutture amministrative che espongono dati sensibili.
 \subsection{Injection}
+I web server utilizzano ampiamente database per memorizzare e recuperare dati. Inoltre, elaborano dati inseriti dagli utenti per fornire pagine dinamiche oppure servizi personalizzati. 
+Un attacco di tipo Injection si verifica quando un attaccante riesce a inserire comandi all'interno di caselle input (non sanificate) e farle eseguire al server.
+\par
+Le Injection si trovano al 5° posto della lista e si dividono in due sottocategorie principali: SQL injection e \ac{XSS}.
+\subsubsection{SQL Injection}
+In una vulnerabilità di tipo SQL Injection l'attaccante compone una interrogazione \ac{SQL} specifica che consente di reperire dati sensibili dal database oppure di manipolare il database in modi non previsti (agigunta di dati, eliminazione). La \ref{subsec:fuga-di-dati} mostra un esempio di questa vulnerabilità importante e come viene risolta.
+\subsubsection{XSS}
 \subsection{Security Misconfiguration}
 \section{Zed Attack Proxy (ZAP)}
 La \ac{ZAP} è uno strumento fondamentale per la verifica di sicurezza delle applicazioni web. Funziona come proxy tra il browser e il server web, consentendo di intercettare, modificare e analizzare le richieste e le risposte HTTP. Tra le sue funzionalità principali vi sono:
@@ -199,6 +216,7 @@ Le interrogazioni SQL stanno alla base di ogni sito dinamico. Mentre nella sezio
 \par
 Il punto di partenza per il seguente attacco è nuovamente la barra di ricerca che esegue una interrogazione vulnerabile sul server, accettando ogni tipo di parametro.
 \subsection{Fuga di dati tramite API}
+\label{subsec:fuga-di-dati}
 \texttt{routes/search.ts}
 \lstinputlisting[language=JavaScript,label={lst:searchProducts}, caption={Ricerca dei prodotti con query SQL vulnerabile}]{listings/searchProducts.ts}
 \begin{sloppypar}
