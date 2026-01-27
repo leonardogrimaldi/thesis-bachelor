@@ -1,4 +1,7 @@
 name: Build LaTeX and deploy on GitHub Releases
+run: |
+    sudo apt-get update
+    sudo apt-get install -y texlive-bibtex-extra bibtex
 on:
   push:
     tags: '*'
