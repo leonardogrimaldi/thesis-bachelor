@@ -36,6 +36,7 @@
 \acrodef{REST}{Representational State Transfer}
 \acrodef{HTTP}{HyperText Transfer Protocol}
 \acrodef{ZAP}{Zed Attack Proxy}
+\acrodef{URL}{Uniform Resource Locator}
 \mainlinespacing{1.241} % line spacing in mainmatter, comment to default (1)
 
 \begin{document}
@@ -102,7 +103,7 @@ Nell'analisi di sicurezza di un applicazione la esposizione di \ac{API} è il mo
 \begin{figure}
   \centering
   \copyrightbox[b]{\includegraphics[width=.8\linewidth]{figures/Rest-API-2.png}}{Autore: Seobility - Licenza: CC BY-SA 4.0\cite{seobility-license}}
-  \caption{Diagramma delle interazioni tra i vari attori in un'architettura REST.\cite{seobility-rest-api}}
+  \caption{Diagramma delle interazioni tra i tre principali attori in un'architettura REST.\cite{seobility-rest-api}}
   \label{fig:rest-api-diagram}
 \end{figure}
 \par
@@ -127,9 +128,22 @@ Un attacco di tipo Injection si verifica quando un attaccante riesce a inserire 
 \par
 Le Injection si trovano al 5° posto della lista e si dividono in due sottocategorie principali: SQL injection e \ac{XSS}.
 \subsubsection{SQL Injection}
-In una vulnerabilità di tipo SQL Injection l'attaccante compone una interrogazione \ac{SQL} specifica che consente di reperire dati sensibili dal database oppure di manipolare il database in modi non previsti (agigunta di dati, eliminazione). La \ref{subsec:fuga-di-dati} mostra un esempio di questa vulnerabilità importante e come viene risolta.
-\subsubsection{XSS}
+In una vulnerabilità di tipo SQL Injection l'attaccante compone una interrogazione \ac{SQL} specifica che consente di reperire dati sensibili dal database oppure di manipolare il database in modi non previsti (aggiunta di dati, eliminazione). La \ref{subsec:fuga-di-dati} mostra un esempio di questa vulnerabilità importante e come viene risolta.
+\subsubsection{Cross-Site Scripting (XSS)}
+Le \ac{XSS} sono vulnerabilità che coinvolgono i client, gli utenti del sito, oltre che il server stesso. Spesso sfruttano codice \textit{JavaScript} per eseguire script maliziosi sulla macchina dell'utente e ottenere dati sensibili dal sito, come la password o i dati di pagamento.
+\begin{sloppypar}
+I loro vettori di attacco sono \ac{URL} che contengono parametri malevoli come \texttt{https://localhost:3000/search?q=<script src="javascript:alert('codice malevolo')"></script>} che vengono inviati alla vittima (client XSS) oppure pagine del web server compromesse con codice malevolo eseguito all'apertura (server XSS). La sezione \ref{sec:xss} contiene la risoluzione e alcune dimostrazioni di questa vulnerabilità.
+\par
+La \cref{fig:stored-xss-diagram} mostra il diagramma di sequenza di un attacco XSS di tipo \textit{stored}, dove il codice malevolo viene memorizzato sul server e inviato a ogni utente che visita la pagina compromessa. Questo tipo di attacco può essere sfruttato tramite la vulnerabilità Broken Access Control, risolta in sezione \ref{subsec:manomissione-dei-prodotti}.
+\end{sloppypar}
+\begin{figure}
+    \centering
+    \copyrightbox[b]{\includegraphics[width=.8\linewidth]{figures/Cross-site_scripting_attack_sequence_diagram_-_en.png}}{Copyright © di Michel Bakni sotto licenza Creative Commons Attribution-Share Alike 4.0 International\cite{cc-share-alike-4.0-international}}
+    \caption{Diagramma della sequenza di attacco XSS di tipo \textit{stored}\cite{cross-site-attack-diagram}}
+    \label{fig:stored-xss-diagram}
+\end{figure}
 \subsection{Security Misconfiguration}
+Nelle specifiche di OWASP viene definito che: ``La configurazione errata avviene quando un sistema, applicazione o servizio cloud è configurato in modo non corretto dal punto di vista della sicurezza, creando vulnerabilità''\cite{owasp-security-misconfiguration}. Questa definizione comprende la visualizzazione di errori, uso di credenziali predefinite e abilitazione di pagine o servizi non necessari e quindi anche API. Durante lo sviluppo web è comune dimenticarsi di disabilitare alcune funzionalità o endpoint API che non sono più necessari, esponendo il server a potenziali attacchi informatici. La sezione \ref{subsec:interfaccia-deprecata} mostra un esempio di questa vulnerabilità e come viene risolta.
 \section{Zed Attack Proxy (ZAP)}
 La \ac{ZAP} è uno strumento fondamentale per la verifica di sicurezza delle applicazioni web. Funziona come proxy tra il browser e il server web, consentendo di intercettare, modificare e analizzare le richieste e le risposte HTTP. Tra le sue funzionalità principali vi sono:
 \begin{itemize}
@@ -173,6 +187,7 @@ In questo capitolo vengono analizzati quattro tipi di vulnerabilità presenti su
 %Per ognuna di esse viene mostrato il codice vulnerabile, la spiegazione della falla di sicurezza, il payload di attacco e infine la contromisura adottata per risolvere il problema.
 Tutto il codice riportato in questa sezione è rilasciato sotto licenza MIT\cite{juice-shop-license}.
 \section{XSS (Cross-Site Scripting)}
+\label{sec:xss}
 La componente front end della barra di ricerca è spesso una fonte di vulnerabilità per il computer dell'utente se non gestita in modo sicuro. Molte volte i valori di ricerca non vengono sanificati (ripuliti da codice speciale come tag HTML con codice JavaScript) e ciò può portare all'esecuzione di codice non previsto sulla macchina utente. Se il valore di ricerca viene immesso nell'URL, questo può essere usato per un attacco di hacking dove si inietta del codice malizioso all'interno di un link che la vittima apre, compromettendo i suoi dati sul sito. È proprio ciò che accadde in questa sezione, dove verrà risolta una vulnerabilità \ac{XSS} nella barra di ricerca del sito.
 \subsection{Barra di ricerca}
 \par
