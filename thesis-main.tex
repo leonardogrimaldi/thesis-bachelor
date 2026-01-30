@@ -426,7 +426,7 @@ Infine, si aggiorna \texttt{server.ts} per includere la funzione appena creata:
 app.post('/file-upload', uploadToMemory.single('file'), ensureFileIsPassed, checkFileType, metrics.observeFileUploadMetricsMiddleware(), handleZipFileUpload, handleXmlUpload, handleYamlUpload)
 \end{lstlisting}
 \par
-Ora, quando si tenta di caricare un file malevolo come \texttt{test.txt.zip} già subito si ottiene il riscontro HTTP 415, \texttt{Unsupported File Type} e la pagina HTML comunica l'errore correttamente. È stata tentata anche la modifica dell'attributo \texttt{filename=test.txt.zip} in \texttt{filename=test.txt} e la risposta è la **stessa**: il patch della vulnerabilità è stato eseguito correttamente.
+Ora, quando si tenta di caricare un file malevolo come \texttt{test.txt.zip} già subito si ottiene il riscontro HTTP 415, \texttt{Unsupported File Type} e la pagina HTML comunica l'errore correttamente. È stata tentata anche la modifica dell'attributo \texttt{filename=test.txt.zip} in \texttt{filename=test.txt} e la risposta è la \textit{stessa}: il patch della vulnerabilità è stato eseguito correttamente.
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{figures/complaint-txt-zip-payload.png}
