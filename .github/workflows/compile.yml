@@ -20,11 +20,6 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - name: Install LaTeX dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y texlive-bibtex-extra
-      
       - uses: DanySK/compile-and-publish-all-latex@2.2.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
