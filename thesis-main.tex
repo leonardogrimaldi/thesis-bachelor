@@ -39,6 +39,7 @@
 \acrodef{HTTP}{HyperText Transfer Protocol}
 \acrodef{ZAP}{Zed Attack Proxy}
 \acrodef{URL}{Uniform Resource Locator}
+\acrodef{CI/CD}{Continuous Integration/Continuous Deployment}
 \mainlinespacing{1.241} % line spacing in mainmatter, comment to default (1)
 
 \begin{document}
@@ -68,31 +69,13 @@ Optional. Max a few lines.
 Le vulnerabilità web sono una delle principali minacce alla sicurezza delle applicazioni odierne.
 Di recente, una falla di sicurezza su un portale web automobilistico ha portato all'accesso completo su un sistema aziendale statunitense, consentendo l'accesso ad automobili e segreti aziendali\cite{eaton-defcon}. 
 
-In questa tesi sono state esplorate alcune delle vulnerabilità più comuni nelle API REST con l'ausilio di un'applicazione web vulnerabile chiamata OWASP Juice Shop. Inoltre è stato mostrato codice di esempio per ogni vulnerabilità elencata e sono state proposte delle contromisure per mitigare i rischi associati. L'obiettivo di questa tesi è di fornire una panoramica sulle insidie di sicurezza più comuni nello sviluppo web e quali minacce informatiche possano derivarne.
+In questa tesi sono state esplorate alcune delle vulnerabilità più comuni nelle API REST con l'ausilio di un'applicazione web vulnerabile chiamata OWASP Juice Shop. Inoltre è stato mostrato codice di esempio per ogni vulnerabilità elencata e sono state proposte delle contromisure per mitigare i rischi associati. L'obiettivo di questa tesi è di fornire una panoramica sulle insidie di sicurezza più comuni nello sviluppo web e quali minacce informatiche possano derivarne. Altresì la risoluzione di queste è stata una parte integrante.
 \par
 La metodologia adottata per l'implementazione di contromisure si è basata su una prima analisi dell'applicazione per trovare i punti di attacco. Dopodiché si è esaminato il codice associato alla pagina vulnerabile e consultate le documentazioni in rete per trovare i miglior standard e modi di aggiornamento (patching). 
-
-Write your intro here.
-\sidenote{Add sidenotes in this way. They are named after the author of the thesis}
-
-You can use acronyms that your defined previously,
-such as \ac{IoT}.
-%
-If you use acronyms twice,
-they will be written in full only once
-(indeed, you can mention the \ac{IoT} now without it being fully explained).
-%
-In some cases, you may need a plural form of the acronym.
-%
-For instance,
-that you are discussing \acp{vm},
-you may need both \ac{vm} and \acp{vm}.
-
-\paragraph{Structure of the Thesis}
-
-\note{At the end, describe the structure of the paper}
+\paragraph{Struttura della tesi}
 
 \chapter{Background}
+\label{chap:background}
 In questo capitolo vengono descritti i concetti fondamentali che riguardano la sicurezza web sia a livello teorico che pratico.
 \par
 La prima definizione importante e ricorrente è di \textbf{vulnerabilità}, ovvero una debolezza nel sistema software che può essere sfruttata per comprometterne la sicurezza\cite{RFC4949}. 
@@ -486,8 +469,12 @@ const allowedTypes = ['application/pdf', 'application/zip']
 Per confermare la risoluzione della falla di sicurezza, si tenta di caricare un file \texttt{test.xml.zip} e la risposta del server è un codice \texttt{HTTP 415}, come mostrato in \cref{fig:complaint-txt-zip-response}. Finalmente, il lavoro di patching è terminato a buon fine e l'API \texttt{/file-upload} non è più vulnerabile a \textit{XXE} e \textit{Unrestricted File Upload}.
 
 \chapter{Conclusioni}
-Conclusion chapter should point out: (1) Briefly recall problem, starting point and methods adopted, (2) Briefly report Findings, (3) Briefly discuss benefits/limitations, (4) Discuss Future Work
-
+% Conclusion chapter should point out: (1) Briefly recall problem, starting point and methods adopted, (2) Briefly report Findings, (3) Briefly discuss benefits/limitations, (4) Discuss Future Work
+In questa tesi si è mostrato il lavoro svolto per la risoluzione di vulnerabilità di sicurezza di un'applicazione vulnerabile. La base di partenza è stata la teoria dietro alle \ac{API}, proseguendo con la lista delle dieci vulnerabilità più comuni che è stata un fondamento solido per l'analisi pratica dell'applicazione. L'uso di strumenti come \ac{ZAP} ha permesso di visualizzare le componenti software in interazione e di comprendere il meccanismo dell \ac{API} studiato precedentemente, contribuendo a una crescita graduale nelle abilità di caccia proattiva di minacce informatiche. In seguito alla scoperta delle stesse, la risoluzione delle vulnerabilità si è rivelata un processo sistematico che ha coinvolto una prima analisi del codice sorgente e successivamente la lettura di documentazione in rete per trovare l'approccio implementativo più sicuro e adeguato al sistema. Con un ultima fase di testing si è potuto confermare la risoluzione dei problemi di sicurezza e concludere il processo, verificando che gli attacchi precedentemente attuabili ora non sono più eseguibili.
+\par
+Ovviamente, la protezione da attacchi informatici non è stata terminata (e non lo sarà mai!): il continuo sviluppo di un applicazione o la sola messa in rete di un sito web espone a nuove vulnerabilità che devono essere risolte regolarmente. Un proseguimento naturale del lavoro svolto in questa tesi potrebbe essere sicuramente l'automazione del processo di scansione delle vulnerabilità e l'integrazione di test di sicurezza automatici all'interno della pipeline di sviluppo software.
+\par
+Nonostante lo stato di sicurezza futuro dell'applicazione, in questa tesi sono state acquisite competenze fondamentali per l'analisi e la risoluzione di vulnerabilità comuni, che potranno essere applicate in contesti reali di sviluppo software e sicurezza informatica.  
 %----------------------------------------------------------------------------------------
 % BIBLIOGRAPHY
 %----------------------------------------------------------------------------------------
