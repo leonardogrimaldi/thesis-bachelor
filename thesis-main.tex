@@ -7,6 +7,8 @@
 \usepackage{acronym}
 \usepackage{copyrightbox}
 
+\renewcommand{\lstlistlistingname}{Elenco dei codici}
+
 \definecolor{lightgray}{rgb}{.9,.9,.9}
 \definecolor{darkgray}{rgb}{.4,.4,.4}
 \definecolor{purple}{rgb}{0.65, 0.12, 0.82}
@@ -231,7 +233,7 @@ Visitando l'endpoint API in questione vengono mostrati in formato JSON tutti i p
 \begin{figure}
 \centering
 \includegraphics[width=.8\linewidth]{figures/api-products-put.png}
-\caption{Esecuzione con \textit{Postman} di una richiesta \texttt{PUT} sull'endpoint \texttt{/api/Products/9} per modificare il prodotto con id 9 senza autenticazione. La risposta del server (in basso) indica che la modifica è avvenuta con successo.}
+\caption[Esecuzione con \textit{Postman} di una richiesta \texttt{PUT} sull'endpoint dei prodotti]{Esecuzione con \textit{Postman} di una richiesta \texttt{PUT} sull'endpoint \texttt{/api/Products/9} per modificare il prodotto con id 9 senza autenticazione. La risposta del server (in basso) indica che la modifica è avvenuta con successo.}
 \label{fig:api-products-put}
 \end{figure}
 \subsection{Pagina reclami}
@@ -297,7 +299,7 @@ Ci si può domandare cosa avviene utilizzando un payload diverso, come \texttt{<
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{figures/search-bar-img-payload-console.png}
-    \caption{Errore in console con payload di tipo \texttt{<img src=javascript:alert('XSS')>}}
+    \caption[Errore in console con payload di tipo XSS dentro img]{Errore in console con payload di tipo \texttt{<img src=javascript:alert('XSS')>}}
     \label{fig:search-bar-img-payload-console}
 \end{figure}
 \begin{figure}
