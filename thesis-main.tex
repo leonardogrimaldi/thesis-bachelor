@@ -193,7 +193,7 @@ La \cref{fig:juice-shop-architecture} mostra tutte le componenti di sviluppo del
     \label{fig:juice-shop-architecture}
 \end{figure}
 \section{Esplorazione}
-Una parte essenziale della risoluzione di vulnerabilità è l'analisi della pagina web e delle richieste effettuate senza avere accesso al codice, il cosiddetto \textit{black box testing}, per individuare i principali punti e vettori di attacco.
+Una parte essenziale della risoluzione di vulnerabilità è l'analisi delle pagina web e delle richieste effettuate senza avere accesso al codice, il cosiddetto \textit{black box testing}, per individuare i principali punti e vettori di attacco. In questa sezione verranno effettuati alcuni attacchi per identificare i punti più critici dell'applicazione che consentiranno di trovare con più facilità il codice vulnerabile durante la fase di \textit{patching} del capitolo \ref{chap:implementazione}.
 \subsection{Barra di ricerca}
 Nella pagina principale di Juice Shop è presente una barra di ricerca che non esegue la sanificazione dell'input, ovvero consente l'inserimento di codice HTML e JavaScript. È possibile notare questo meccanismo nella \cref{fig:dom-xss-probing} dove viene inserito nella barra di ricerca il seguente codice \texttt{<h1>Test<h1>} e analizzando la pagina modificata si trova l'elemento inserito all'interno del DOM.
 \begin{figure}
@@ -219,7 +219,7 @@ Il componente precedente della barra di ricerca si affida a un API che può esse
   \label{fig:api-search-request}
 \end{figure}
 \subsection{Modifica prodotti}
-Scorrendo nel codice \textit{JavaScript} \texttt{main.js} del sito web è possibile trovare con grande facilità le API utilizzate per gestire i prodotti. Una di queste è \texttt{/api/Products} (Figura \cref{fig:api-products-devtools}). Si presuppone che l'endpoint venga utilizzato dagli amministratori per creare o modificare i prodotti, ma presto si vedrà che è possibile farne uso senza autenticazione.
+Scorrendo nel codice \textit{JavaScript} \texttt{main.js} del sito web è possibile trovare con grande facilità le API utilizzate per gestire i prodotti. Una di queste è \texttt{/api/Products} (\cref{fig:api-products-devtools}). Si presuppone che l'endpoint venga utilizzato dagli amministratori per creare o modificare i prodotti, ma presto si vedrà che è possibile farne uso senza autenticazione.
 \begin{figure}
 \centering
 \includegraphics[width=.8\linewidth]{figures/api-products-devtools.png}
@@ -235,7 +235,38 @@ Visitando l'endpoint API in questione vengono mostrati in formato JSON tutti i p
 \label{fig:api-products-put}
 \end{figure}
 \subsection{Pagina reclami}
+Dopo aver eseguito il login con un account personale è possibile vedere il link alla pagina \textit{Complaint} nella barra laterale (\texttt{/complain}). Visitandola si è presentati con un form (\cref{fig:complaint-form}) contenente i campi \textit{Customer} (non modificabile), \textit{Message} e \textit{Invoice}, il quale consente di allegare un file opzionale. Il vettore di attacco è esattamente quest'ultimo, su cui verranno controllate le restrizioni di upload.
+\begin{figure}
+\centering
+\includegraphics[width=.8\linewidth]{figures/complaint-form.png}
+\caption{Form di invio reclami con campo di caricamento file}
+\label{fig:complaint-form}
+\end{figure}
+\par
+Tentando di allegare un file di tipo arbitrario come \texttt{.jpg} si ottiene a schermo l'errore di \cref{fig:complaint-form-forbidden-file-type} che comunica le estensioni consentite, ovvero solo \texttt{.zip} e \texttt{.pdf}. Per intercettare la richiesta (e scovare la vulnerabilità) si procede allora inserendo come allegato un file \texttt{.zip} e si analizza la richiesta dentro ZAP. La \cref{fig:complaint-form-zap-upload-prova} mostra nella finestra bianca di ZAP la richiesta POST all'endpoint \texttt{/file-upload} che carica effettivamente il file.
+\begin{figure}
+  \centering
+  \includegraphics[width=.8\linewidth]{figures/complaint-form-forbidden-file-type.png}
+  \caption{Violazione degli allegati consentiti dopo aver inserito un immagine \texttt{.jpg} nel form di invio reclami.}
+  \label{fig:complaint-form-forbidden-file-type}
+\end{figure}
+\begin{figure}
+  \centering
+  \includegraphics[width=.8\linewidth]{figures/complaint-form-zap-upload-prova.png}
+  \caption{Intercettazione con \textit{ZAP} di una richiesta pulita con allegato \texttt{prova.zip} visibile nel attributo \texttt{filename=""} del corpo della richiesta.}
+  \label{fig:complaint-form-zap-upload-prova}
+\end{figure}
+\par
+Aprendo il \textit{Request Editor} di ZAP viene modificato il file allegato con uno di tipo non consentito, ad esempio \texttt{.txt} nel corpo della richiesta, come mostrato in \cref{fig:complaint-form-zap-upload-text} e cliccando su \textit{Send} la richiesta modificata viene inviata al server. 
+\begin{figure}
+\centering
+\includegraphics[width=.8\linewidth]{figures/complaint-form-zap-upload-text.png}
+\caption{Richiesta HTTP modificata in \textit{ZAP} con \textit{Manual Request Editor} per allegare un file di tipo non consentito \texttt{.txt}.}
+\label{fig:complaint-form-zap-upload-text}
+\end{figure}
+La risposta del server è nuovamente un \texttt{HTTP 204 code} e il file viene caricato con successo nonostante la violazione delle estensioni consentite. Ciò dimostra che il controllo delle estensioni è effettuato solo lato client e non sul server, permettendo così a un attaccante di caricare file arbitrari.
 \chapter{Implementazione}
+\label{chap:implementazione}
 In questo capitolo vengono analizzati quattro tipi di vulnerabilità presenti su Juice Shop.
 %Per ognuna di esse viene mostrato il codice vulnerabile, la spiegazione della falla di sicurezza, il payload di attacco e infine la contromisura adottata per risolvere il problema.
 Tutto il codice riportato in questa sezione è rilasciato sotto licenza MIT\cite{juice-shop-license}.
@@ -276,8 +307,8 @@ Ci si può domandare cosa avviene utilizzando un payload diverso, come \texttt{<
     \label{fig:search-bar-img-payload-after}
 \end{figure}
 \begin{sloppypar}
-(**PATCHED**)
-Un attacco più sofisticato che si può presupporre di eseguire conoscendo il framework del sito è il [Template Injection](https://www.paloaltonetworks.com/blog/cloud-security/template-injection-vulnerabilities/). Si tratta di incorporare dentro al payload espressioni speciali come \texttt{\{\{\}\}} e far eseguire al motore JavaScript codice arbitrario e/o malizioso.
+% (**PATCHED**)
+% Un attacco più sofisticato che si può presupporre di eseguire conoscendo il framework del sito è il [Template Injection](https://www.paloaltonetworks.com/blog/cloud-security/template-injection-vulnerabilities/). Si tratta di incorporare dentro al payload espressioni speciali come \texttt{\{\{\}\}} e far eseguire al motore JavaScript codice arbitrario e/o malizioso.
 \end{sloppypar}
 \section{SQL Injection}
 \label{sec:contribution-sql-inj}
