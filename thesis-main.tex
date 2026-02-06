@@ -6,6 +6,7 @@
 \usepackage{shortcuts}
 \usepackage{acronym}
 \usepackage{copyrightbox}
+\usepackage{url}
 
 \renewcommand{\lstlistlistingname}{Elenco dei codici}
 
@@ -270,10 +271,8 @@ Tutto il codice riportato in questa sezione è rilasciato sotto licenza MIT\cite
 \label{sec:xss}
 La componente front end della barra di ricerca è spesso una fonte di vulnerabilità per il computer dell'utente se non gestita in modo sicuro. Molte volte i valori di ricerca non vengono sanificati (ripuliti da codice speciale come tag HTML con codice JavaScript) e ciò può portare all'esecuzione di codice non previsto sulla macchina utente. Se il valore di ricerca viene immesso nell'URL, questo può essere usato per un attacco di hacking dove si inietta del codice malizioso all'interno di un link che la vittima apre, compromettendo i suoi dati sul sito. È proprio ciò che accadde in questa sezione, dove verrà risolta una vulnerabilità \ac{XSS} nella barra di ricerca del sito.
 \subsection{Barra di ricerca}
-\par
-\texttt{search-result.component.ts}
 \begin{sloppypar}
-Il framework Angular assiste i sviluppatori diffidando gli input provenienti da utenti e quindi implementando una rigida sanificazione dei valori da inserire nel DOM\cite{angular-xss-docs}. Tuttavia, rende anche possibile la disattivazione\cite{angular-safe-values-docs} del meccanismo di sanificazione automatica per scopi precisi (come inserimento di \texttt{<iframe>}) con \texttt{bypassSecurityTrust...}.
+Il framework Angular assiste i sviluppatori diffidando gli input provenienti da utenti e quindi implementando una rigida sanificazione dei valori da inserire nel DOM\cite{angular-xss-docs}. Tuttavia, rende anche possibile la disattivazione\cite{angular-safe-values-docs} del meccanismo di sanificazione automatica per scopi precisi (come inserimento di \texttt{<iframe>}) con \texttt{bypassSecurityTrust...}, come visibile nel \cref{lst:filterTable} che concerne la funzione di ricerca di prodotti\footnote{Il codice di questa funzione si trova all'interno di \path{frontend/src/app/search-result/search-result.component.ts}}.
 \lstinputlisting[language=JavaScript,label={lst:filterTable}, caption={Filtro dei prodotti in base alla stringa di ricerca. La riga 6 mostra un uso scorretto di \texttt{bypassSecurityTrustHtml}}]{listings/filterTable.ts}
 \par
 In questo caso però gli sviluppatori del sito hanno commesso un errore: la barra di ricerca non necessità di particolari funzionalità aggiuntive; essa deve solamente elaborare la stringa di ricerca e restituire i prodotti che soddisfano la stringa. Nel codice quindi viene eliminato \texttt{this.sanitizer.bypassSecurityTrustHtml(queryParam)} e sostituito con \texttt{queryParam}.
@@ -288,7 +287,9 @@ Ora avendo apportato la modifica si tenta il payload \texttt{<iframe src="javasc
     \label{fig:search-bar-iframe-payload-after}
 \end{figure}
 \begin{sloppypar}
-Ci si può domandare cosa avviene utilizzando un payload diverso, come \texttt{<img src=javascript:alert('XSS')>}. La risposta è che Angular immette l'elemento nel DOM con la peculiarità che viene aggiunto l'attributo \textit{unsafe} dinanzi al codice JavaScript, rendendolo del tutto inagibile e stampando in console l'errore di \cref{fig:search-bar-img-payload-console}.
+Ci si può domandare cosa avviene utilizzando un payload diverso, come \texttt{<img src=javascript:alert('XSS')>}. La risposta è che Angular immette l'elemento nel DOM con la peculiarità che viene aggiunto l'attributo \textit{unsafe} (\cref{fig:search-bar-img-payload-after}) dinanzi al codice JavaScript, rendendolo del tutto inagibile e stampando in console l'errore di \cref{fig:search-bar-img-payload-console}.
+\par
+La vulnerabilità si ritiene così risolta poiché il codice JavaScript non viene eseguito e l'inserimento di elementi pericolosi come \texttt{<iframe>} o \texttt{<script>} non produce più nessun risultato. Ci si affida in questo caso ad Angular che esegue automaticamente la sanificazione. Per tecnologie diverse da Angular si sarebbe dovuta potenzialmente implementare una funzione di sanificazione personalizzata.
 \end{sloppypar}
 \begin{figure}
     \centering
@@ -316,7 +317,7 @@ Il punto di partenza per il seguente attacco è nuovamente la barra di ricerca c
 \texttt{routes/search.ts}
 \lstinputlisting[language=JavaScript,label={lst:searchProducts}, caption={Ricerca dei prodotti con query SQL vulnerabile}]{listings/searchProducts.ts}
 \begin{sloppypar}
-Nella funzione \texttt{searchProducts} che espone l'API di ricerca dei prodotti \texttt{/rest/products/search} è presente codice SQL vulnerabile, legato a un uso non corretto della libreria Sequelize\cite{sequelize}. Sequelize è un ORM (Object-Relational Mapping) per Node.js che consente di interagire con database come MySQL e, in questo caso, SQLite.
+Nella funzione \texttt{searchProducts}\footnote{Questa funzione si può trovare dentro \path{routes/search.ts}} (\cref{lst:searchProducts}) che espone l'API di ricerca dei prodotti \texttt{/rest/products/search} è presente codice SQL vulnerabile, legato a un uso non corretto della libreria Sequelize\cite{sequelize}. Sequelize è un ORM (Object-Relational Mapping) per Node.js che consente di interagire con database come MySQL e, in questo caso, SQLite.
 \end{sloppypar}
 \par
 La funzione \texttt{query()}\cite{sequelize-query} consente di passare un parametro stringa contenente la query SQL e restituisce una Promise\cite{mdn-promise} contenente il risultato. La vulnerabilità back-end del sito si trova precisamente nell'utilizzo di questo metodo: gli sviluppatori hanno costruito la stringa SQL in modo dinamico facendo un passaggio di parametro.
@@ -332,14 +333,16 @@ Usando i \textit{replacements} si crea un formato di rimpiazzamento riscrivendo 
 SELECT * FROM Products WHERE ((name LIKE :chiave OR description LIKE :chiave) AND deletedAt IS NULL) ORDER BY name
 \end{lstlisting}
 \par
-Successivamente, viene richiamato il parametro nominato \texttt{:chiave} dentro l'oggetto di opzioni passato come secondo parametro a \texttt{query()}. Il risultato sarà di questo tipo:
+Successivamente, viene richiamato il parametro nominato \texttt{:chiave} dentro l'oggetto di opzioni passato come secondo parametro a \texttt{query()}. Il risultato di questa modifica è visibile nel \cref{lst:criteria-query-fixed}:
 \begin{lstlisting}[language=JavaScript,label={lst:criteria-query-fixed}, caption={Uso di \textit{replacements} per sanificare il parametro di ricerca nel metodo \texttt{query()} di Sequelize}]
 models.sequelize.query(`SELECT * FROM Products WHERE ((name LIKE :chiave OR description LIKE :chiave) AND deletedAt IS NULL) ORDER BY name`, {
     replacements: { chiave: `%${criteria}%` }
 })
 \end{lstlisting}
 \par
-Anche la wildcard \texttt{\%} (che nel \texttt{LIKE} di SQL corrisponde alla ricerca di tutti i pattern con la parola chiave) si trova ora attorno alla variabile \texttt{criteria}. Proseguendo, viene eseguito il testing di Injection per assicurarsi che la vulnerabilità sia stata corretta:
+Anche la wildcard \texttt{\%} (che nel \texttt{LIKE} di SQL corrisponde alla ricerca di tutti i pattern con la parola chiave) si trova ora attorno alla variabile \texttt{criteria}. Proseguendo, viene eseguito il testing di Injection per assicurarsi che la vulnerabilità sia stata corretta.La \cref{fig:rest-search-injection-union-after} mostra la risposta JSON del server dopo che si è inviata la richiesta di ricerca con il payload di Injection. Il payload \lstinline{test')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_master--} che in precedenza poteva restituire l'intero schema SQLite ora restituisce un array vuoto.
+\par
+La vulnerabilità è stata in questo modo risolta, poiché la funzione back end non accetta più comandi SQL, che ora vengono trattati come stringhe di ricerca e sanificati, restituendo così solo i prodotti che soddisfano la chiave di ricerca.
 \begin{figure}[h]
     \centering
     \includegraphics[width=.8\linewidth]{figures/rest-search-injection-union-after.png}
@@ -347,14 +350,12 @@ Anche la wildcard \texttt{\%} (che nel \texttt{LIKE} di SQL corrisponde alla ric
     \label{fig:rest-search-injection-union-after}
 \end{figure}
 \par
-Il payload \lstinline{test')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_master--} che in precedenza poteva restituire l'intero schema SQLite ora restituisce un array vuoto. La \cref{fig:rest-search-injection-union-after} mostra la risposta JSON del server dopo che si è inviata la richiesta di ricerca con il payload di Injection. La vulnerabilità è stata così risolta.
 \section{Broken Access Control}
 Durante lo sviluppo di un web server è importante definire i permessi di accesso alle risorse ai soli utenti abilitati a utilizzarle. Per un sistema complesso è comune dimenticarsi di disabilitare gli accessi ad alcune interfacce, esponendole ad attacchi dove un hacker può modificare dati sensibili o eseguire operazioni non autorizzate. In questa sezione viene mostrato un esempio di questo tipo di vulnerabilità e le conseguenze.
 \subsection{Manomissione dei prodotti}
 \label{subsec:manomissione-dei-prodotti}
-\texttt{server.ts}
 \par
-Il file \texttt{server.ts} è il punto di entrata principale invocato all'avvio dell'applicazione Node.js. Contiene la procedura \texttt{start()} che inizializza i servizi di WebSocket riguardanti le notifiche, le metriche di Prometheus e assegna la porta di ascolto del server. Inoltre, fa uso di ExpressJS per impostare gli endpoint API personalizzati. Riunisce tutte le componenti del back-end per offrire indirizzi URL all'utente finale che potrà interagire e usufruire dei servizi esposti.
+Il file \texttt{server.ts} è il punto di entrata principale invocato all'avvio dell'applicazione Node.js. Contiene la procedura \texttt{start()} che inizializza i servizi di WebSocket riguardanti le notifiche, le metriche di Prometheus e assegna la porta di ascolto del server. Inoltre, fa uso di ExpressJS per impostare gli endpoint API personalizzati. Riunisce tutte le componenti del back end per offrire indirizzi URL all'utente finale che potrà interagire e usufruire dei servizi esposti.
 \begin{lstlisting}[language=JavaScript,label={lst:server-start}, caption={Assegnazione degli endpoint API e relative funzioni \textit{middleware} di sicurezza}]
 /* Baskets: Unauthorized users are not allowed to access baskets */
 app.use('/rest/basket', security.isAuthorized(), security.appendUserId())
@@ -367,7 +368,7 @@ app.post('/api/Products', security.isAuthorized())
 app.delete('/api/Products/:id', security.denyAll())
 \end{lstlisting}
 \par
-Il codice sopraesposto mostra come \texttt{app} viene invocato per creare gli endpoint API e abilitare le richieste con metodi HTTP come \texttt{GET}, \texttt{POST}, \texttt{PUT}, \texttt{DELETE} a indirizzi personalizzati. Il secondo parametro delle funzioni in \texttt{app} riceve generalmente la funzione di \textit{callback}. Questa viene utilizzata per elaborare le richieste e, nel caso più specifico, confermare l'identità dell'utente per determinarne i suoi permessi. Essa viene denominata \textit{middleware function}, poiché agisce da tramite tra la richiesta e la risposta, gestendo l'autenticazione, il logging o gli errori.
+Il codice sopraesposto mostra come l'oggetto \texttt{app} (Express) viene invocato per creare gli endpoint API e abilitare le richieste con metodi HTTP come \texttt{GET}, \texttt{POST}, \texttt{PUT}, \texttt{DELETE} a indirizzi personalizzati. Il secondo parametro delle funzioni in \texttt{app} riceve generalmente la funzione di \textit{callback}. Questa viene utilizzata per elaborare le richieste e, nel caso più specifico, confermare l'identità dell'utente per determinarne i suoi permessi. Essa viene denominata \textit{middleware function}, poiché agisce da tramite tra la richiesta e la risposta, gestendo l'autenticazione, il logging o gli errori.
 \par
 In questo semplice caso, gli sviluppatori si sono dimenticati di assegnare i controlli di sicurezza sulla richiesta HTTP PUT di \texttt{/api/Products/:id}, consentendo a \textbf{tutti} gli utenti di modificare i prodotti a proprio piacimento. In questo modo, oltre a interrompere un servizio e procurare danno finanziario, l'utente malizioso potrebbe iniettare un payload XSS, inserendo script arbitrari nelle descrizioni dei prodotti.
 \par
@@ -482,11 +483,11 @@ Per confermare la risoluzione della falla di sicurezza, si tenta di caricare un 
 \chapter{Conclusioni}
 \label{chap:conclusioni}
 % Conclusion chapter should point out: (1) Briefly recall problem, starting point and methods adopted, (2) Briefly report Findings, (3) Briefly discuss benefits/limitations, (4) Discuss Future Work
-In questa tesi si è mostrato il lavoro svolto per la risoluzione di vulnerabilità di sicurezza di un'applicazione vulnerabile. La base di partenza è stata la teoria dietro alle \ac{API}, proseguendo con la lista delle dieci vulnerabilità più comuni che è stata un fondamento solido per l'analisi pratica dell'applicazione. L'uso di strumenti come \ac{ZAP} ha permesso di visualizzare le componenti software in interazione e di comprendere il meccanismo dell \ac{API} studiato precedentemente, contribuendo a una crescita graduale nelle abilità di caccia proattiva di minacce informatiche. In seguito alla scoperta delle stesse, la risoluzione delle vulnerabilità si è rivelata un processo sistematico che ha coinvolto una prima analisi del codice sorgente e successivamente la lettura di documentazione in rete per trovare l'approccio implementativo più sicuro e adeguato al sistema. Con un ultima fase di testing si è potuto confermare la risoluzione dei problemi di sicurezza e concludere il processo, verificando che gli attacchi precedentemente attuabili ora non sono più eseguibili.
+In questa tesi si è mostrato il lavoro svolto per la risoluzione di vulnerabilità di sicurezza di un'applicazione vulnerabile. La base di partenza è stata la teoria dietro alle \ac{API}, proseguendo con la lista delle dieci vulnerabilità più comuni che è stata un fondamento solido per l'analisi pratica dell'applicazione. L'uso di strumenti come \ac{ZAP} ha permesso di visualizzare le componenti software in interazione e di comprendere il meccanismo delle \ac{API} studiato precedentemente, contribuendo a una crescita graduale nelle abilità di caccia proattiva di minacce informatiche. In seguito alla scoperta delle stesse, la risoluzione delle vulnerabilità si è rivelata un processo sistematico che ha coinvolto una prima analisi del codice sorgente e successivamente la lettura di documentazione in rete per trovare l'approccio implementativo più sicuro e adeguato al sistema. Con un ultima fase di testing si è potuto confermare la risoluzione dei problemi di sicurezza e concludere il processo, verificando che gli attacchi precedentemente attuabili ora non sono più eseguibili.
 \par
 Ovviamente, la protezione da attacchi informatici non è stata terminata (e non lo sarà mai!): il continuo sviluppo di un applicazione o la sola messa in rete di un sito web espone a nuove vulnerabilità che devono essere risolte regolarmente. Un proseguimento naturale del lavoro svolto in questa tesi potrebbe essere sicuramente l'automazione del processo di scansione delle vulnerabilità e l'integrazione di test di sicurezza automatici all'interno della pipeline di sviluppo software.
 \par
-Nonostante lo stato di sicurezza futuro dell'applicazione, in questa tesi sono state acquisite competenze fondamentali per l'analisi e la risoluzione di vulnerabilità comuni, che potranno essere applicate in contesti reali di sviluppo software e sicurezza informatica.  
+Nonostante lo stato di sicurezza futuro dell'applicazione, in questa tesi sono state acquisite competenze fondamentali per l'analisi e la risoluzione di vulnerabilità comuni, che potranno e sono state applicate in contesti reali di sviluppo software e sicurezza informatica.
 %----------------------------------------------------------------------------------------
 % BIBLIOGRAPHY
 %----------------------------------------------------------------------------------------
