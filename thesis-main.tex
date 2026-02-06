@@ -67,13 +67,15 @@ Optional. Max a few lines.
 \label{chap:introduction}
 %----------------------------------------------------------------------------------------
 Le vulnerabilità web sono una delle principali minacce alla sicurezza delle applicazioni odierne.
-Di recente, una falla di sicurezza su un portale web automobilistico ha portato all'accesso completo su un sistema aziendale statunitense, consentendo l'accesso ad automobili e segreti aziendali\cite{eaton-defcon}. 
-
+Di recente, una falla di sicurezza su un portale web automobilistico ha portato all'accesso completo su un sistema aziendale statunitense, consentendo anche l'accesso fisico ad automobili e segreti aziendali\cite{eaton-defcon}. 
+\par
 In questa tesi sono state esplorate alcune delle vulnerabilità più comuni nelle API REST con l'ausilio di un'applicazione web vulnerabile chiamata OWASP Juice Shop. Inoltre è stato mostrato codice di esempio per ogni vulnerabilità elencata e sono state proposte delle contromisure per mitigare i rischi associati. L'obiettivo di questa tesi è di fornire una panoramica sulle insidie di sicurezza più comuni nello sviluppo web e quali minacce informatiche possano derivarne. Altresì la risoluzione di queste è stata una parte integrante.
 \par
-La metodologia adottata per l'implementazione di contromisure si è basata su una prima analisi dell'applicazione per trovare i punti di attacco. Dopodiché si è esaminato il codice associato alla pagina vulnerabile e consultate le documentazioni in rete per trovare i miglior standard e modi di aggiornamento (patching). 
+La metodologia adottata per l'implementazione di contromisure si è basata su una prima analisi dell'applicazione per trovare i punti di attacco. Dopodiché si è esaminato il codice associato alla pagina vulnerabile e consultate le documentazioni in rete per trovare i migliori standard e modi di aggiornamento (\textit{patching}) del codice. Infine, dopo aver applicato le modifiche, sono stati eseguiti dei test per verificare la risoluzione della vulnerabilità e l'efficacia della contromisura adottata. 
 \paragraph{Struttura della tesi}
-
+Il primo capitolo di \nameref{chap:introduction} presenta il contesto generale e le motivazioni per i successivi capitoli. Il secondo capitolo di \nameref{chap:background} definisce alcuni concetti chiave per la comprensione della sicurezza web tra cui le \ac{API} e la lista OWASP TOP 10 con figure e riferimenti pratici. Inoltre, illustra i programmi di testing della sicurezza utilizzati nella fase di analisi e implementazione che costituiscono una parte importante della metodologia adottata.
+\par
+A seguire, l'\nameref{chap:analisi-del-dominio} introduce l'applicazione vulnerabile \textit{Juice Shop} che verrà sottoposta ad attacchi informatici mirati che consentiranno di approfondire i concetti teorici imparati e di utilizzare i strumenti come \ac{ZAP} per trovare vulnerabilità. Questa parte contiene numerose immagini e passi riproducibili di attacchi informatici che forniscono la base solida per la risoluzione degli stessi nel capitolo successivo. \nameref{chap:implementazione} è il capitolo centrale della tesi che contiene la descrizione delle quattro vulnerabilità comuni, il codice vulnerabile dentro \textit{Juice Shop}, la spiegazione della falla di sicurezza, il payload di attacco e infine la contromisura adottata per risolvere il problema. Infine, il capitolo di \nameref{chap:conclusioni} riassume il lavoro svolto, i limiti e i proseguimenti futuri.
 \chapter{Background}
 \label{chap:background}
 In questo capitolo vengono descritti i concetti fondamentali che riguardano la sicurezza web sia a livello teorico che pratico.
@@ -155,8 +157,17 @@ La \ac{ZAP} è uno strumento fondamentale per la verifica di sicurezza delle app
 \end{figure}
 In questa tesi si è fatto uso principalmente della intercettazione delle richieste e risposte. Nella \cref{fig:zap-main-window} viene mostrata la schermata principale di ZAP, con la cronologia delle richieste HTTP effettuate dal browser nella finestra inferiore e al centro il pannello di analisi della richiesta selezionata, da cui è possibile modificare i parametri prima di inviarla nuovamente al server con il click destro.
 La sezione \ref{subsec:interfaccia-deprecata} mostra un esempio di come ZAP sia stato utilizzato per intercettare una richiesta di caricamento file e modificarne il contenuto per testare la vulnerabilità di \textit{Security Misconfiguration}. La \cref{fig:complaint-txt-zip-response} mostra come con ZAP sia possibile modificare una richiesta HTTP per inviare un file di tipo non consentito e sfruttare una vulnerabilità API del server.
+\section{Postman}
+Postman è uno strumento molto diffuso, usato per testare e sviluppare API. Consente di creare, inviare e analizzare richieste HTTP in modo semplice e intuitivo. Può intendersi come un'alternativa a ZAP (soprattuto al \textit{Request Editor}) per l'invio di richieste HTTP, ma con un'interfaccia più user-friendly. Tra le sue funzionalità principali vi sono:
+\begin{itemize}
+    \item Creazione di richieste HTTP personalizzate
+    \item Gestione delle collezioni di richieste
+    \item Test automatizzati delle API
+    \item Generazione di documentazione per le API
+\end{itemize}
+Nel corso della tesi Postman è stato utilizzato principalmente per inviare richieste \texttt{PUT} e \texttt{POST} alle API del server per testare le vulnerabilità di Broken Access Control e Security Misconfiguration come in \cref{fig:api-products-put}.
 \chapter{Analisi del dominio}
-
+\label{chap:analisi-del-dominio}
 \section{Applicazione vulnerabile}
 Prima ancora di incominciare la valutazione di sicurezza è necessario scegliere un sito web vulnerabile. In rete sono presenti una vasta gamma di applicazioni per la simulazione di attacchi informatici, come \ac{DVWA}\cite{dvwa-github} (basato su PHP) e OWASP Juice Shop\cite{owasp-juice-shop} (basato su Node.js). In questa tesi si è scelto di utilizzare quest'ultima per modernità di tecnologie e aggiornamenti.
 \subsection{OWASP Juice Shop}
@@ -469,6 +480,7 @@ const allowedTypes = ['application/pdf', 'application/zip']
 Per confermare la risoluzione della falla di sicurezza, si tenta di caricare un file \texttt{test.xml.zip} e la risposta del server è un codice \texttt{HTTP 415}, come mostrato in \cref{fig:complaint-txt-zip-response}. Finalmente, il lavoro di patching è terminato a buon fine e l'API \texttt{/file-upload} non è più vulnerabile a \textit{XXE} e \textit{Unrestricted File Upload}.
 
 \chapter{Conclusioni}
+\label{chap:conclusioni}
 % Conclusion chapter should point out: (1) Briefly recall problem, starting point and methods adopted, (2) Briefly report Findings, (3) Briefly discuss benefits/limitations, (4) Discuss Future Work
 In questa tesi si è mostrato il lavoro svolto per la risoluzione di vulnerabilità di sicurezza di un'applicazione vulnerabile. La base di partenza è stata la teoria dietro alle \ac{API}, proseguendo con la lista delle dieci vulnerabilità più comuni che è stata un fondamento solido per l'analisi pratica dell'applicazione. L'uso di strumenti come \ac{ZAP} ha permesso di visualizzare le componenti software in interazione e di comprendere il meccanismo dell \ac{API} studiato precedentemente, contribuendo a una crescita graduale nelle abilità di caccia proattiva di minacce informatiche. In seguito alla scoperta delle stesse, la risoluzione delle vulnerabilità si è rivelata un processo sistematico che ha coinvolto una prima analisi del codice sorgente e successivamente la lettura di documentazione in rete per trovare l'approccio implementativo più sicuro e adeguato al sistema. Con un ultima fase di testing si è potuto confermare la risoluzione dei problemi di sicurezza e concludere il processo, verificando che gli attacchi precedentemente attuabili ora non sono più eseguibili.
 \par
