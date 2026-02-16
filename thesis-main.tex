@@ -48,7 +48,7 @@
 \frontmatter\frontispiece
 
 \begin{abstract}	
-Max 2000 characters, strict.
+Le vulnerabilità web sono una delle principali sfide nel campo della sicurezza informatica, in quanto possono causare conseguenze significative come furto di dati sensibili, accesso non autorizzato ai sistemi e la loro compromissione. Questa tesi analizza le vulnerabilità più diffuse nelle API REST attraverso uno studio pratico condotto su OWASP Juice Shop, un'applicazione web appositamente sviluppata per scopi didattici in ambito sicurezza. Il documento illustra inoltre la metodologia sistematica per l'identificazione e la risoluzione di queste vulnerabilità, evidenziando l'impiego di strumenti di testing specializzati quali Zed Attack Proxy (ZAP) e Postman, che hanno permesso sia l'analisi approfondita che la validazione delle soluzioni implementate.
 \end{abstract}
 
 \begin{dedication} % this is optional
@@ -264,9 +264,9 @@ Aprendo il \textit{Request Editor} di ZAP viene modificato il file allegato con 
 La risposta del server è nuovamente un \texttt{HTTP 204 code} e il file viene caricato con successo nonostante la violazione delle estensioni consentite. Ciò dimostra che il controllo delle estensioni è effettuato solo lato client e non sul server, permettendo così a un attaccante di caricare file arbitrari.
 \chapter{Implementazione}
 \label{chap:implementazione}
-In questo capitolo vengono analizzati quattro tipi di vulnerabilità presenti su Juice Shop.
+In questo capitolo vengono implementate le contromisure per quattro tipi di vulnerabilità presenti su Juice Shop.
 %Per ognuna di esse viene mostrato il codice vulnerabile, la spiegazione della falla di sicurezza, il payload di attacco e infine la contromisura adottata per risolvere il problema.
-Tutto il codice riportato in questa sezione è rilasciato sotto licenza MIT\cite{juice-shop-license}.
+Tutto il codice riportato in questa sezione è rilasciato sotto licenza MIT\cite{juice-shop-license}. È possibile trovare il codice completo di tutte le modifiche effettuate sulla piattaforma Zenodo\cite{bjorn_kimminich_2026_18661516}.
 \section{XSS (Cross-Site Scripting)}
 \label{sec:xss}
 La componente front end della barra di ricerca è spesso una fonte di vulnerabilità per il computer dell'utente se non gestita in modo sicuro. Molte volte i valori di ricerca non vengono sanificati (ripuliti da codice speciale come tag HTML con codice JavaScript) e ciò può portare all'esecuzione di codice non previsto sulla macchina utente. Se il valore di ricerca viene immesso nell'URL, questo può essere usato per un attacco di hacking dove si inietta del codice malizioso all'interno di un link che la vittima apre, compromettendo i suoi dati sul sito. È proprio ciò che accadde in questa sezione, dove verrà risolta una vulnerabilità \ac{XSS} nella barra di ricerca del sito.
@@ -289,7 +289,7 @@ Ora avendo apportato la modifica si tenta il payload \texttt{<iframe src="javasc
 \begin{sloppypar}
 Ci si può domandare cosa avviene utilizzando un payload diverso, come \texttt{<img src=javascript:alert('XSS')>}. La risposta è che Angular immette l'elemento nel DOM con la peculiarità che viene aggiunto l'attributo \textit{unsafe} (\cref{fig:search-bar-img-payload-after}) dinanzi al codice JavaScript, rendendolo del tutto inagibile e stampando in console l'errore di \cref{fig:search-bar-img-payload-console}.
 \par
-La vulnerabilità si ritiene così risolta poiché il codice JavaScript non viene eseguito e l'inserimento di elementi pericolosi come \texttt{<iframe>} o \texttt{<script>} non produce più nessun risultato. Ci si affida in questo caso ad Angular che esegue automaticamente la sanificazione. Per tecnologie diverse da Angular si sarebbe dovuta potenzialmente implementare una funzione di sanificazione personalizzata.
+La vulnerabilità si ritiene così risolta poiché il codice JavaScript non viene eseguito e l'inserimento di elementi pericolosi come \texttt{<iframe>} o \texttt{<script>} non produce più nessun risultato. Ci si affida in questo caso ad Angular che esegue automaticamente la sanificazione. Per tecnologie diverse da Angular si sarebbe dovuta implementare una funzione di sanificazione personalizzata.
 \end{sloppypar}
 \begin{figure}
     \centering
@@ -314,7 +314,6 @@ Le interrogazioni SQL stanno alla base di ogni sito dinamico. Mentre nella sezio
 Il punto di partenza per il seguente attacco è nuovamente la barra di ricerca che esegue una interrogazione vulnerabile sul server, accettando ogni tipo di parametro.
 \subsection{Fuga di dati tramite API}
 \label{subsec:fuga-di-dati}
-\texttt{routes/search.ts}
 \lstinputlisting[language=JavaScript, label={lst:searchProducts}, caption={Ricerca dei prodotti con query SQL vulnerabile}]{listings/searchProducts.ts}
 \begin{sloppypar}
 Nella funzione \texttt{searchProducts}\footnote{La funzione \textit{searchProducts()} si può trovare dentro \path{routes/search.ts}} (\cref{lst:searchProducts}) che espone l'API di ricerca dei prodotti \texttt{/rest/products/search} è presente codice SQL vulnerabile, legato a un uso non corretto della libreria Sequelize\cite{sequelize}. Sequelize è un ORM (Object-Relational Mapping) per Node.js che consente di interagire con database come MySQL e, in questo caso, SQLite.
@@ -386,7 +385,9 @@ app.route('/api/Products/:id')
   .delete(security.denyAll())
 \end{lstlisting}
 \par
-I servizi di \texttt{PUT} e \texttt{DELETE} vengono così rifiutati, mentre per il POST è necessario un header di autenticazione; \texttt{GET} resta abilitato normalmente per tutti. L'applicazione così modificata si rende più sicura.
+I servizi di \texttt{PUT} e \texttt{DELETE} vengono così rifiutati, mentre per il POST è necessario un header di autenticazione; \texttt{GET} resta abilitato normalmente per tutti. La \cref{fig:api-products-put-after} mostra l'errore di autorizzazione restituito dal server dopo aver tentato di eseguire una richiesta \texttt{PUT} su \texttt{/api/Products/9} senza autenticazione.
+\par
+L'applicazione così modificata richiede i permessi per la modifica dei prodotti e la vulnerabilità di Broken Access Control si ritiene risolta poiché ora solo gli utenti autorizzati possono eseguire operazioni di modifica sui prodotti, mentre tutti gli altri ricevono un errore di autorizzazione.
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{figures/api-products-put-after.png}
@@ -397,7 +398,6 @@ I servizi di \texttt{PUT} e \texttt{DELETE} vengono così rifiutati, mentre per 
 Un'impostazione errata dei servizi web può portare a gravi falle di sicurezza, come l'esecuzione di codice remoto. In questa sezione viene mostrato un esempio di vulnerabilità legata al caricamento di file non sicuri che deriva da una cattiva configurazione del server.
 \subsection{Interfaccia deprecata}
 \label{subsec:interfaccia-deprecata}
-\texttt{routes/fileUpload.ts}, \texttt{server.ts}
 \par
 La pagina di invio reclami \texttt{/complaint} (\cref{fig:complaint-txt-zip-payload}) consente agli utenti di allegare file di tipo \texttt{.pdf}, \texttt{.zip} (da front end). Tuttavia, intercettando la richiesta è possibile modificare il file allegato con uno di tipo diverso, come \texttt{.txt.zip}, aggirando il controllo sul front end. Questo perché il server non esegue un controllo sul tipo di estensione del file caricato, consentendo così l'upload di file non sicuri.
 All'interno di \texttt{server.ts} si può notare la presenza dell'interfaccia di caricamento dei file su indirizzo \texttt{/file-upload}:
@@ -426,7 +426,7 @@ export function observeFileUploadMetricsMiddleware () {
 }
 \end{lstlisting}
 \par
-Le successive funzioni riguardano la elaborazione di file specifici con estensione \texttt{.zip}, \texttt{.xml} e \texttt{yaml}. In tutto questo, si può notare la \textbf{mancanza} di un'importante funzione protettiva: il controllo sul tipo di estensioni (Nel codice è già presente la funzione \texttt{checkFileType}, ma questa serve semplicemente per segnare il completamento della challenge. In un caso reale si può presupporre che i developer si siano dimenticati di eseguire il controllo oppure l'hanno realizzato male, poiché non comporta un semplice controllo della stringa di estensione). Nel Frontend di Angular è presente un controllo sul tipo di estensione, nello specifico in \texttt{frontend/src/app/complaint/complaint.component.ts}, ma occorre prestare attenzione poiché è codice lato client che può essere modificato o immediatamente aggirato intercettando la richiesta API con OWASP ZAP.
+Le successive funzioni riguardano la elaborazione di file specifici con estensione \texttt{.zip}, \texttt{.xml} e \texttt{yaml}. In tutto questo, si può notare la \textbf{mancanza} di un'importante funzione protettiva: il controllo sul tipo di estensioni (Nel codice è già presente la funzione \texttt{checkFileType}, ma questa serve semplicemente per segnare il completamento della challenge. In un caso reale si può presupporre che i developer si siano dimenticati di eseguire il controllo oppure l'hanno realizzato male, poiché non comporta un semplice controllo della stringa di estensione). Nel front end di Angular è presente un controllo sul tipo di estensione\footnote{Si veda \path{frontend/src/app/complaint/complaint.component.ts}}, ma occorre prestare attenzione poiché è codice lato client che può essere modificato o immediatamente aggirato intercettando la richiesta API con OWASP ZAP.
 \par
 Si sposta l'attenzione quindi su \texttt{routes/fileUpload.ts} dove si modificherà la funzione \texttt{checkFileType}. Si potrebbe molto facilmente pensare di usare il parametro \texttt{.mimetype} di un oggetto \texttt{Multer.File}, ma questo \textbf{non} è sicuro, poiché fa riferimento al header che viene inviato nella richiesta, che può essere intercettato dall'utente.
 \par
@@ -478,7 +478,9 @@ Il server ora non effettua più il parsing di codice \texttt{XML} o \texttt{YAML
 \begin{lstlisting}[language=JavaScript]
 const allowedTypes = ['application/pdf', 'application/zip']
 \end{lstlisting}
-Per confermare la risoluzione della falla di sicurezza, si tenta di caricare un file \texttt{test.xml.zip} e la risposta del server è un codice \texttt{HTTP 415}, come mostrato in \cref{fig:complaint-txt-zip-response}. Finalmente, il lavoro di patching è terminato a buon fine e l'API \texttt{/file-upload} non è più vulnerabile a \textit{XXE} e \textit{Unrestricted File Upload}.
+Per confermare la risoluzione della falla di sicurezza, si tenta di caricare un file \texttt{test.xml.zip} e la risposta del server è un codice \texttt{HTTP 415}, come mostrato in \cref{fig:complaint-txt-zip-response}.
+\par
+Finalmente, il lavoro di patching è terminato a buon fine e l'API \texttt{/file-upload} non è più vulnerabile a \textit{XXE} e \textit{Unrestricted File Upload}. L'interfaccia deprecata è stata disabilitata, il controllo del tipo di estensione è stato implementato in modo sicuro e la vulnerabilità di Security Misconfiguration si ritiene risolta.
 
 \chapter{Conclusioni}
 \label{chap:conclusioni}
@@ -499,8 +501,8 @@ Nonostante lo stato di sicurezza futuro dell'applicazione, in questa tesi sono s
 \bibliographystyle{ieeetr}
 \bibliography{bibliography}
 
-\begin{acknowledgements} % this is optional
-Optional. Max 1 page.
-\end{acknowledgements}
+% \begin{acknowledgements} % this is optional
+% Optional. Max 1 page.
+% \end{acknowledgements}
 
 \end{document}
