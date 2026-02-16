@@ -70,7 +70,7 @@ Optional. Max a few lines.
 Le vulnerabilità web sono una delle principali minacce alla sicurezza delle applicazioni odierne.
 Di recente, una falla di sicurezza su un portale web automobilistico ha portato all'accesso completo su un sistema aziendale statunitense, consentendo anche l'accesso fisico ad automobili e segreti aziendali\cite{eaton-defcon}. 
 \par
-In questa tesi sono state esplorate alcune delle vulnerabilità più comuni nelle API REST con l'ausilio di un'applicazione web vulnerabile chiamata OWASP Juice Shop. Inoltre è stato mostrato codice di esempio per ogni vulnerabilità elencata e sono state proposte delle contromisure per mitigare i rischi associati. L'obiettivo di questa tesi è di fornire una panoramica sulle insidie di sicurezza più comuni nello sviluppo web e quali minacce informatiche possano derivarne. Altresì la risoluzione di queste è stata una parte integrante.
+In questa tesi sono state esplorate alcune delle vulnerabilità più comuni nelle API REST con l'ausilio di un'applicazione web vulnerabile chiamata OWASP Juice Shop. Inoltre è stato mostrato codice di esempio per ogni vulnerabilità elencata e sono state proposte delle contromisure per mitigare i rischi associati. L'obiettivo di questa tesi è di fornire una panoramica sulle insidie di sicurezza più comuni nello sviluppo web e quali minacce informatiche possano derivarne.
 \par
 La metodologia adottata per l'implementazione di contromisure si è basata su una prima analisi dell'applicazione per trovare i punti di attacco. Dopodiché si è esaminato il codice associato alla pagina vulnerabile e consultate le documentazioni in rete per trovare i migliori standard e modi di aggiornamento (\textit{patching}) del codice. Infine, dopo aver applicato le modifiche, sono stati eseguiti dei test per verificare la risoluzione della vulnerabilità e l'efficacia della contromisura adottata. 
 \paragraph{Struttura della tesi}
@@ -88,23 +88,23 @@ Le \textbf{\ac{API}} sono un insieme di regole e protocolli che consentono la co
     \item \textbf{Client-Server}: l'utente (client) richiede servizi al server tramite richieste \ac{HTTP}
     \item \textbf{Stateless}: le richieste sono indipendenti e contengono tutte le informazioni necessarie per essere elaborate
     \item \textbf{Uniform Interface}: si addotta un formato standard di comunicazione, indipendente dal programma
-    \item \textbf{Cacheable}: le risposte del server devono essere constrassegnate come memorizzabili o non memorizzabili nella cache del client
+    \item \textbf{Cacheable}: le risposte del server devono essere contrassegnate come memorizzabili o non memorizzabili nella cache del client
 \end{itemize}
 Nell'analisi di sicurezza di un applicazione la esposizione di \ac{API} è il modo principale per l'individuazione di vulnerabilità. L'architettura client-server del primo punto rende possibile l'interazione tra un utente malintenzionato e il server con i metodi \ac{HTTP} \texttt{GET}, \texttt{POST}, \texttt{PUT}, \texttt{DELETE} che devono essere gestiti in modo appropriato per evitare che l'utente legga o modifichi dati sensibili. La \cref{fig:rest-api-diagram} mostra le interazioni tra il client (computer) e le REST API del server tramite le richieste elencate prima. Si noti la presenza del database, che non viene raggiunto direttamente dal client e il formato \textit{JSON} o \textit{XML} usato per la risposta del server.
 \begin{figure}
   \centering
   \copyrightbox[b]{\includegraphics[width=.8\linewidth]{figures/Rest-API-2.png}}{Autore: Seobility - Licenza: CC BY-SA 4.0\cite{seobility-license}}
-  \caption{Diagramma delle interazioni tra i tre principali attori in un'architettura REST.\cite{seobility-rest-api}}
+  \caption[Diagramma delle interazioni tra i tre principali attori in un'architettura REST]{Diagramma delle interazioni tra i tre principali attori in un'architettura REST\cite{seobility-rest-api}}
   \label{fig:rest-api-diagram}
 \end{figure}
 \par
-La proprietà stateless del secondo punto mostra un problema di sicurezza molto diffuso: se i servizi devono avere un permesso specifico, tutte le richieste \ac{HTTP} devono essere accompagnate da una chiave di sicurezza o token per autenticare ed autorizzarne l'uso. Poiché il server non può inferire l'identità del client da richieste precedenti, è necessario che ogni richiesta contenga le credenziali di accesso. Tuttavia, nello sviluppo delle \ac{API} è comune dimenticare di implementare questi controlli di accesso, esponendo il server a vulnerabilità di \textit{Broken Access Control}. La sezione \ref{subsec:manomissione-dei-prodotti} mostra un esempio di questo tipo di vulnerabilità tramite API e descrive alcune conseguenze legate a essa.
+La proprietà stateless del secondo punto mostra un problema di sicurezza molto diffuso: se i servizi devono avere un permesso specifico, tutte le richieste \ac{HTTP} devono essere accompagnate da una chiave di sicurezza o token per autenticare e autorizzarne l'uso. Poiché il server non può inferire l'identità del client da richieste precedenti, è necessario che ogni richiesta contenga le credenziali di accesso. Tuttavia, nello sviluppo delle \ac{API} è comune dimenticare di implementare questi controlli di accesso, esponendo il server a vulnerabilità di \textit{Broken Access Control}. La sezione \ref{subsec:manomissione-dei-prodotti} mostra un esempio di questo tipo di vulnerabilità tramite API e descrive alcune conseguenze legate a essa.
 \section{OWASP TOP 10}
 La lista OWASP TOP 10\cite{owasp-top-10} è il riferimento centrale per le vulnerabilità web più comuni ed è gestita dal team \ac{OWASP}. È stata ampiamente utilizzata per la ricerca di vulnerabilità e la loro risoluzione in questa tesi. Essa contiene dieci delle più comuni categorie di vulnerabilità web, classificate tramite dati raccolti da aziende, organizzazioni e anche sondaggi. La lista viene aggiornata ogni quattro anni e la \cref{fig:owasp-10-list-2025} mostra i cambiamenti dalla scorsa edizione 2021, dove si noti il Broken Access Control è rimasto al primo posto.
 \begin{figure}
   \centering
   \copyrightbox[b]{\includegraphics[width=.8\linewidth]{figures/2025-mappings.png}}{© Copyright 2021-2025 - OWASP Top 10 Team - Licenza Creative Commons Attribution 3.0 Unported License\cite{cc-attribution-3.0-unported}}
-  \caption{Cambiamenti di classifica delle vulnerabilità web più comuni tra gli anni 2021 e 2025\cite{owasp-top-10-introduction}}
+  \caption[Cambiamenti di classifica delle vulnerabilità web più comuni tra gli anni 2021 e 2025]{Cambiamenti di classifica delle vulnerabilità web più comuni tra gli anni 2021 e 2025\cite{owasp-top-10-introduction}}
   \label{fig:owasp-10-list-2025}
 \end{figure}
 Per questa tesi si è scelto di analizzare le categorie descritte nelle seguenti sottosezioni.
@@ -137,7 +137,7 @@ La \cref{fig:stored-xss-diagram} mostra il diagramma di sequenza di un attacco X
 \begin{figure}
     \centering
     \copyrightbox[b]{\includegraphics[width=.8\linewidth]{figures/Cross-site_scripting_attack_sequence_diagram_-_en.png}}{Copyright © di Michel Bakni sotto licenza Creative Commons Attribution-Share Alike 4.0 International\cite{cc-share-alike-4.0-international}}
-    \caption{Diagramma della sequenza di attacco XSS di tipo \textit{stored}\cite{cross-site-attack-diagram}}
+    \caption[Diagramma della sequenza di attacco XSS di tipo \textit{stored}]{Diagramma della sequenza di attacco XSS di tipo \textit{stored}\cite{cross-site-attack-diagram}}
     \label{fig:stored-xss-diagram}
 \end{figure}
 \subsection{Security Misconfiguration}
@@ -159,7 +159,7 @@ La \ac{ZAP} è uno strumento fondamentale per la verifica di sicurezza delle app
 In questa tesi si è fatto uso principalmente della intercettazione delle richieste e risposte. Nella \cref{fig:zap-main-window} viene mostrata la schermata principale di ZAP, con la cronologia delle richieste HTTP effettuate dal browser nella finestra inferiore e al centro il pannello di analisi della richiesta selezionata, da cui è possibile modificare i parametri prima di inviarla nuovamente al server con il click destro.
 La sezione \ref{subsec:interfaccia-deprecata} mostra un esempio di come ZAP sia stato utilizzato per intercettare una richiesta di caricamento file e modificarne il contenuto per testare la vulnerabilità di \textit{Security Misconfiguration}. La \cref{fig:complaint-txt-zip-response} mostra come con ZAP sia possibile modificare una richiesta HTTP per inviare un file di tipo non consentito e sfruttare una vulnerabilità API del server.
 \section{Postman}
-Postman è uno strumento molto diffuso, usato per testare e sviluppare API. Consente di creare, inviare e analizzare richieste HTTP in modo semplice e intuitivo. Può intendersi come un'alternativa a ZAP (soprattuto al \textit{Request Editor}) per l'invio di richieste HTTP, ma con un'interfaccia più user-friendly. Tra le sue funzionalità principali vi sono:
+Postman è uno strumento molto diffuso, usato per testare e sviluppare API. Consente di creare, inviare e analizzare richieste HTTP in modo semplice e intuitivo. Può intendersi come un'alternativa a ZAP (soprattutto al \textit{Request Editor}) per l'invio di richieste HTTP, ma con un'interfaccia più user-friendly. Tra le sue funzionalità principali vi sono:
 \begin{itemize}
     \item Creazione di richieste HTTP personalizzate
     \item Gestione delle collezioni di richieste
@@ -186,17 +186,17 @@ La \cref{fig:juice-shop-architecture} mostra tutte le componenti di sviluppo del
 \begin{figure}
     \centering
     \copyrightbox[b]{\includegraphics[width=.8\linewidth]{figures/architecture-diagram.png}}{Copyright © by Bjoern Kimminich and licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License\cite{noncommercial-noderivatives-4.0}}
-    \caption{Diagramma dell'architettura dell'applicazione OWASP Juice Shop.\cite{architecture-overview}}
+    \caption[Diagramma dell'architettura dell'applicazione OWASP Juice Shop]{Diagramma dell'architettura dell'applicazione OWASP Juice Shop\cite{architecture-overview}}
     \label{fig:juice-shop-architecture}
 \end{figure}
 \section{Esplorazione}
-Una parte essenziale della risoluzione di vulnerabilità è l'analisi delle pagina web e delle richieste effettuate senza avere accesso al codice, il cosiddetto \textit{black box testing}, per individuare i principali punti e vettori di attacco. In questa sezione verranno effettuati alcuni attacchi per identificare i punti più critici dell'applicazione che consentiranno di trovare con più facilità il codice vulnerabile durante la fase di \textit{patching} del capitolo \ref{chap:implementazione}.
+Una parte essenziale della risoluzione di vulnerabilità è l'analisi delle pagine web e delle richieste effettuate senza avere accesso al codice, il cosiddetto \textit{black box testing}, per individuare i principali punti e vettori di attacco. In questa sezione verranno effettuati alcuni attacchi per identificare i punti più critici dell'applicazione che consentiranno di trovare con più facilità il codice vulnerabile durante la fase di \textit{patching} del capitolo \ref{chap:implementazione}.
 \subsection{Barra di ricerca}
 Nella pagina principale di Juice Shop è presente una barra di ricerca che non esegue la sanificazione dell'input, ovvero consente l'inserimento di codice HTML e JavaScript. È possibile notare questo meccanismo nella \cref{fig:dom-xss-probing} dove viene inserito nella barra di ricerca il seguente codice \texttt{<h1>Test<h1>} e analizzando la pagina modificata si trova l'elemento inserito all'interno del DOM.
 \begin{figure}
   \centering
   \includegraphics[width=.8\linewidth]{figures/dom-xss-probing.png}
-  \caption{Probing della barra di ricerca con tag \textit{HTML} \texttt{<h1>}. L'\textit{ispeziona elementi} mostra la presenza del tag nell'albero della pagina suggerendo una possibile vulnerabilità.}
+  \caption[Probing della barra di ricerca con tag \textit{HTML} \texttt{<h1>}]{Probing della barra di ricerca con tag \textit{HTML} \texttt{<h1>}. L'\textit{ispeziona elementi} mostra la presenza del tag nell'albero della pagina suggerendo una possibile vulnerabilità.}
   \label{fig:dom-xss-probing}
 \end{figure}
 \par
@@ -204,7 +204,7 @@ Dopo aver individuato questo punto di attacco, si tenta di eseguire un payload d
 \begin{figure}
   \centering
   \includegraphics[width=.8\linewidth]{figures/dom-xss-result-small.png}
-  \caption{Risultato di esecuzione del script malizioso contenuto dentro un tag \texttt{<iframe>}. L'alert dimostra che il codice JavaScript è stato eseguito con successo.}
+  \caption[Risultato di esecuzione del script malizioso contenuto dentro un tag \texttt{<iframe>}]{Risultato di esecuzione del script malizioso contenuto dentro un tag \texttt{<iframe>}. L'alert dimostra che il codice JavaScript è stato eseguito con successo.}
   \label{fig:dom-xss-result}
 \end{figure}
 \subsection{API per la ricerca}
@@ -212,7 +212,7 @@ Il componente precedente della barra di ricerca si affida a un API che può esse
 \begin{figure}
   \centering
   \includegraphics[width=.8\linewidth]{figures/api-search-request.png}
-  \caption{Richiesta API per la ricerca dei prodotti evidenziata in blu nella finestra inferiore. In alto la risposta del server contenente i header e il JSON dei prodotti (giallo e rosa)}
+  \caption[Richiesta API per la ricerca dei prodotti]{Richiesta API per la ricerca dei prodotti evidenziata in blu nella finestra inferiore. In alto la risposta del server contenente i header e il JSON dei prodotti (giallo e rosa)}
   \label{fig:api-search-request}
 \end{figure}
 \subsection{Modifica prodotti}
@@ -250,7 +250,7 @@ Tentando di allegare un file di tipo arbitrario come \texttt{.jpg} si ottiene a 
 \begin{figure}
   \centering
   \includegraphics[width=.8\linewidth]{figures/complaint-form-zap-upload-prova.png}
-  \caption{Intercettazione con \textit{ZAP} di una richiesta pulita con allegato \texttt{prova.zip} visibile nel attributo \texttt{filename=""} del corpo della richiesta.}
+  \caption[Intercettazione con \textit{ZAP} di una richiesta pulita con allegato \texttt{prova.zip}]{Intercettazione con \textit{ZAP} di una richiesta pulita con allegato \texttt{prova.zip} visibile nel attributo \texttt{filename=""} del corpo della richiesta.}
   \label{fig:complaint-form-zap-upload-prova}
 \end{figure}
 \par
@@ -272,8 +272,8 @@ Tutto il codice riportato in questa sezione è rilasciato sotto licenza MIT\cite
 La componente front end della barra di ricerca è spesso una fonte di vulnerabilità per il computer dell'utente se non gestita in modo sicuro. Molte volte i valori di ricerca non vengono sanificati (ripuliti da codice speciale come tag HTML con codice JavaScript) e ciò può portare all'esecuzione di codice non previsto sulla macchina utente. Se il valore di ricerca viene immesso nell'URL, questo può essere usato per un attacco di hacking dove si inietta del codice malizioso all'interno di un link che la vittima apre, compromettendo i suoi dati sul sito. È proprio ciò che accadde in questa sezione, dove verrà risolta una vulnerabilità \ac{XSS} nella barra di ricerca del sito.
 \subsection{Barra di ricerca}
 \begin{sloppypar}
-Il framework Angular assiste i sviluppatori diffidando gli input provenienti da utenti e quindi implementando una rigida sanificazione dei valori da inserire nel DOM\cite{angular-xss-docs}. Tuttavia, rende anche possibile la disattivazione\cite{angular-safe-values-docs} del meccanismo di sanificazione automatica per scopi precisi (come inserimento di \texttt{<iframe>}) con \texttt{bypassSecurityTrust...}, come visibile nel \cref{lst:filterTable} che concerne la funzione di ricerca di prodotti\footnote{Il codice di questa funzione si trova all'interno di \path{frontend/src/app/search-result/search-result.component.ts}}.
-\lstinputlisting[language=JavaScript,label={lst:filterTable}, caption={Filtro dei prodotti in base alla stringa di ricerca. La riga 6 mostra un uso scorretto di \texttt{bypassSecurityTrustHtml}}]{listings/filterTable.ts}
+Il framework Angular assiste i sviluppatori diffidando gli input provenienti da utenti e quindi implementando una rigida sanificazione dei valori da inserire nel DOM\cite{angular-xss-docs}. Tuttavia, rende anche possibile la disattivazione\cite{angular-safe-values-docs} del meccanismo di sanificazione automatica per scopi precisi (come inserimento di \texttt{<iframe>}) con \texttt{bypassSecurityTrust...}, come visibile nel \cref{lst:filterTable} che concerne la funzione di ricerca di prodotti\footnote{Il codice di \textit{filterTable()} si trova all'interno di \path{frontend/src/app/search-result/search-result.component.ts}}.
+\lstinputlisting[language=JavaScript, label={lst:filterTable}, caption={Filtro dei prodotti in base alla stringa di ricerca. La riga 6 mostra un uso scorretto di \texttt{bypassSecurityTrustHtml}}]{listings/filterTable.ts}
 \par
 In questo caso però gli sviluppatori del sito hanno commesso un errore: la barra di ricerca non necessità di particolari funzionalità aggiuntive; essa deve solamente elaborare la stringa di ricerca e restituire i prodotti che soddisfano la stringa. Nel codice quindi viene eliminato \texttt{this.sanitizer.bypassSecurityTrustHtml(queryParam)} e sostituito con \texttt{queryParam}.
 \end{sloppypar}
@@ -283,7 +283,7 @@ Ora avendo apportato la modifica si tenta il payload \texttt{<iframe src="javasc
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{figures/search-bar-iframe-payload-after.png}
-    \caption{Payload iframe XSS nella barra di ricerca. L'albero degli elementi mostra che l'elemento non viene inserito}
+    \caption[Payload iframe XSS nella barra di ricerca]{Payload iframe XSS nella barra di ricerca. L'albero degli elementi mostra che l'elemento non viene inserito}
     \label{fig:search-bar-iframe-payload-after}
 \end{figure}
 \begin{sloppypar}
@@ -300,7 +300,7 @@ La vulnerabilità si ritiene così risolta poiché il codice JavaScript non vien
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{figures/search-bar-img-payload-after.png}
-    \caption{Payload \texttt{<img src=javascript:alert('XSS')>} nella barra di ricerca. L'elemento immagine viene inserito, ma il codice JavaScript viene etichettato non sicuro}
+    \caption[Payload \texttt{<img src=javascript:alert('XSS')>} nella barra di ricerca]{Payload \texttt{<img src=javascript:alert('XSS')>} nella barra di ricerca. L'elemento immagine viene inserito, ma il codice JavaScript viene etichettato non sicuro}
     \label{fig:search-bar-img-payload-after}
 \end{figure}
 \begin{sloppypar}
@@ -315,9 +315,9 @@ Il punto di partenza per il seguente attacco è nuovamente la barra di ricerca c
 \subsection{Fuga di dati tramite API}
 \label{subsec:fuga-di-dati}
 \texttt{routes/search.ts}
-\lstinputlisting[language=JavaScript,label={lst:searchProducts}, caption={Ricerca dei prodotti con query SQL vulnerabile}]{listings/searchProducts.ts}
+\lstinputlisting[language=JavaScript, label={lst:searchProducts}, caption={Ricerca dei prodotti con query SQL vulnerabile}]{listings/searchProducts.ts}
 \begin{sloppypar}
-Nella funzione \texttt{searchProducts}\footnote{Questa funzione si può trovare dentro \path{routes/search.ts}} (\cref{lst:searchProducts}) che espone l'API di ricerca dei prodotti \texttt{/rest/products/search} è presente codice SQL vulnerabile, legato a un uso non corretto della libreria Sequelize\cite{sequelize}. Sequelize è un ORM (Object-Relational Mapping) per Node.js che consente di interagire con database come MySQL e, in questo caso, SQLite.
+Nella funzione \texttt{searchProducts}\footnote{La funzione \textit{searchProducts()} si può trovare dentro \path{routes/search.ts}} (\cref{lst:searchProducts}) che espone l'API di ricerca dei prodotti \texttt{/rest/products/search} è presente codice SQL vulnerabile, legato a un uso non corretto della libreria Sequelize\cite{sequelize}. Sequelize è un ORM (Object-Relational Mapping) per Node.js che consente di interagire con database come MySQL e, in questo caso, SQLite.
 \end{sloppypar}
 \par
 La funzione \texttt{query()}\cite{sequelize-query} consente di passare un parametro stringa contenente la query SQL e restituisce una Promise\cite{mdn-promise} contenente il risultato. La vulnerabilità back-end del sito si trova precisamente nell'utilizzo di questo metodo: gli sviluppatori hanno costruito la stringa SQL in modo dinamico facendo un passaggio di parametro.
@@ -327,7 +327,7 @@ models.sequelize.query(`SELECT * FROM Products WHERE ((name LIKE '%${criteria}%'
 \par
 Nel codice sopra riportato viene mostrata la query di selezione contenente il parametro \texttt{criteria}, ovvero la chiave di ricerca del prodotto. Questo viene fornito usando la formattazione \texttt{`\$\{chiave\}`} che corrisponde al Template Literal\cite{ts-template-literal} di TypeScript. In questo modo la query SQL può essere costruita dinamicamente e in un modo facile, ma rende possibile l'Injection poiché il parametro non viene sanificato. L'utente malizioso, infatti, potrà eseguire un attacco di tipo \texttt{UNION} per ottenere l'intero schema del database!
 \par
-Per procedere alla risoluzione di questo problema è necessario leggere la documentazione sulle \textit{Raw Queries}\cite{sequelize-raw-queries} di Sequelize ed utilizzare correttamente le funzionalità \textit{Replacements} oppure \textit{Bind Parameter} per eseguire la sanificazione della stringa proveniente dal client ed interagire nel modo più sicuro con il database.
+Per procedere alla risoluzione di questo problema è necessario leggere la documentazione sulle \textit{Raw Queries}\cite{sequelize-raw-queries} di Sequelize e utilizzare correttamente le funzionalità \textit{Replacements} oppure \textit{Bind Parameter} per eseguire la sanificazione della stringa proveniente dal client e interagire nel modo più sicuro con il database.
 Usando i \textit{replacements} si crea un formato di rimpiazzamento riscrivendo il blocco \texttt{'\%\$\{criteria\}\%'} con \texttt{:chiave}, formando la query finale in questo modo:
 \begin{lstlisting}[language=SQL,label={lst:criteria-query-vul}, caption={Query SQL sicura con rimpiazzamento del parametro}]
 SELECT * FROM Products WHERE ((name LIKE :chiave OR description LIKE :chiave) AND deletedAt IS NULL) ORDER BY name
@@ -464,7 +464,7 @@ Ora, quando si tenta di caricare un file malevolo come \texttt{test.txt.zip} gi�
 \begin{figure}
     \centering
     \includegraphics[width=.8\linewidth]{figures/complaint-txt-zip-response.png}
-    \caption{Risposta di invio del file \texttt{test.txt.zip} a destra, con messaggio di errore \texttt{Invalid file type} e risposta HTTP 415}
+    \caption[Risposta di invio del file \texttt{test.txt.zip}]{Risposta di invio del file \texttt{test.txt.zip} a destra, con messaggio di errore \texttt{Invalid file type} e risposta HTTP 415}
     \label{fig:complaint-txt-zip-response}
 \end{figure}
 \par
