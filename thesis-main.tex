@@ -52,7 +52,7 @@ Le vulnerabilità web sono una delle principali sfide nel campo della sicurezza 
 \end{abstract}
 
 \begin{dedication} % this is optional
-Optional. Max a few lines.
+Ai miei genitori e a mio fratello.
 \end{dedication}
 
 %----------------------------------------------------------------------------------------
@@ -70,7 +70,9 @@ Optional. Max a few lines.
 Le vulnerabilità web sono una delle principali minacce alla sicurezza delle applicazioni odierne.
 Di recente, una falla di sicurezza su un portale web automobilistico ha portato all'accesso completo su un sistema aziendale statunitense, consentendo anche l'accesso fisico ad automobili e segreti aziendali\cite{eaton-defcon}. 
 \par
-In questa tesi sono state esplorate alcune delle vulnerabilità più comuni nelle API REST con l'ausilio di un'applicazione web vulnerabile chiamata OWASP Juice Shop. Inoltre è stato mostrato codice di esempio per ogni vulnerabilità elencata e sono state proposte delle contromisure per mitigare i rischi associati. L'obiettivo di questa tesi è di fornire una panoramica sulle insidie di sicurezza più comuni nello sviluppo web e quali minacce informatiche possano derivarne.
+In questa tesi sono state esplorate alcune delle vulnerabilità più comuni nelle \textbf{API REST} con l'ausilio di un'applicazione web vulnerabile chiamata \textbf{OWASP Juice Shop}. Inoltre è stato mostrato codice di esempio per ogni vulnerabilità elencata e sono state proposte delle contromisure per mitigare i rischi associati.
+\par
+L'obiettivo di questa tesi è di fornire una panoramica sulle insidie di sicurezza più comuni nello sviluppo web e quali minacce informatiche possano derivarne, nonché implementare il codice risolutivo validandone l'efficacia attraverso test specifici. 
 \par
 La metodologia adottata per l'implementazione di contromisure si è basata su una prima analisi dell'applicazione per trovare i punti di attacco. Dopodiché si è esaminato il codice associato alla pagina vulnerabile e consultate le documentazioni in rete per trovare i migliori standard e modi di aggiornamento (\textit{patching}) del codice. Infine, dopo aver applicato le modifiche, sono stati eseguiti dei test per verificare la risoluzione della vulnerabilità e l'efficacia della contromisura adottata. 
 \paragraph{Struttura della tesi}
@@ -172,7 +174,7 @@ Nel corso della tesi Postman è stato utilizzato principalmente per inviare rich
 \section{Applicazione vulnerabile}
 Prima ancora di incominciare la valutazione di sicurezza è necessario scegliere un sito web vulnerabile. In rete sono presenti una vasta gamma di applicazioni per la simulazione di attacchi informatici, come \ac{DVWA}\cite{dvwa-github} (basato su PHP) e OWASP Juice Shop\cite{owasp-juice-shop} (basato su Node.js). In questa tesi si è scelto di utilizzare quest'ultima per modernità di tecnologie e aggiornamenti.
 \subsection{OWASP Juice Shop}
-\textit{Juice Shop} è un sito web che simula un portale di vendita per prodotti di vario tipo. Presenta numerose funzionalità tra cui la registrazione, ordinazione, invio di recensioni, commenti e molto altro ancora, il che la rende un'applicazione completa. Essendo ideata per l'apprendimento e la pratica del testing di sicurezza, presenta anche numerose vulnerabilità web che fanno parte della lista \ac{OWASP} TOP 10\cite{owasp-top-10}.
+\textit{Juice Shop} è un sito web che simula un portale di vendita per prodotti di vario tipo. Presenta numerose funzionalità tra cui la registrazione, ordinazione, invio di recensioni, commenti e molto altro ancora, il che la rende un'applicazione completa. Essendo ideata per l'apprendimento e la pratica del testing di sicurezza, presenta anche numerose vulnerabilità web che fanno parte della lista \ac{OWASP} TOP 10.
 \begin{figure}
     \centering
     \copyrightbox{\includegraphics[scale=0.05]{figures/JuiceShop_Logo.png}}{Copyright © by Bjoern Kimminich \& the OWASP Juice Shop contributors 2014-2026. Licensed under the MIT License\cite{juice-shop-license}}
@@ -208,12 +210,18 @@ Dopo aver individuato questo punto di attacco, si tenta di eseguire un payload d
   \label{fig:dom-xss-result}
 \end{figure}
 \subsection{API per la ricerca}
-Il componente precedente della barra di ricerca si affida a un API che può essere intercettata utilizzando \textit{ZAP}. La \cref{fig:api-search-request} mostra che il browser fa richiesta a \texttt{/rest/products/search?q=} per ottenere la lista dei prodotti da visualizzare. Navigando sull'URL se ne può avere conferma. In questo caso si può sfruttare il parametro \texttt{q} per eseguire un payload di tipo \textit{SQL Injection} contenente un comando di interrogazione. Infatti, si può ottenere l'intero schema del database (e leggerne i dati) eseguendo un attacco di tipo \textit{UNION} descritto nella sezione di \ref{sec:contribution-sql-inj} da un punto di vista risolutivo.
+Il componente precedente della barra di ricerca si affida a un API che può essere intercettata utilizzando \textit{ZAP}. La \cref{fig:api-search-request} mostra che il browser fa richiesta a \texttt{/rest/products/search?q=} per ottenere la lista dei prodotti da visualizzare. Navigando sull'URL se ne può avere conferma. In questo caso si può sfruttare il parametro \texttt{q} per eseguire un payload di tipo \textit{SQL Injection} contenente un comando di interrogazione. Infatti, si può ottenere l'intero schema del database (e leggerne i dati) eseguendo un attacco di tipo \textit{UNION} descritto nella sezione di \ref{sec:contribution-sql-inj} da un punto di vista risolutivo. Il payload di attacco che consente di ottenere i dati sensibili è il seguente: \lstinline{test')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_master--} e il risultato è mostrato in \cref{fig:sql-injection-union-result} dove si possono vedere i nomi delle tabelle e delle colonne del database SQLite dentro una risposta in formato JSON.
 \begin{figure}
   \centering
   \includegraphics[width=.8\linewidth]{figures/api-search-request.png}
   \caption[Richiesta API per la ricerca dei prodotti]{Richiesta API per la ricerca dei prodotti evidenziata in blu nella finestra inferiore. In alto la risposta del server contenente i header e il JSON dei prodotti (giallo e rosa)}
   \label{fig:api-search-request}
+\end{figure}
+\begin{figure}
+  \centering
+  \includegraphics[width=.8\linewidth]{figures/slides/rest-products-search-union-sql.png}
+  \caption[Risultato di invio di un payload UNION sull'API di ricerca dei prodotti]{Risultato di invio di un payload UNION sull'API di ricerca dei prodotti. La risposta del server contiene i dati sensibili del database SQLite, come il nome delle tabelle e delle colonne.}
+  \label{fig:sql-injection-union-result}
 \end{figure}
 \subsection{Modifica prodotti}
 Scorrendo nel codice \textit{JavaScript} \texttt{main.js} del sito web è possibile trovare con grande facilità le API utilizzate per gestire i prodotti. Una di queste è \texttt{/api/Products} (\cref{fig:api-products-devtools}). Si presuppone che l'endpoint venga utilizzato dagli amministratori per creare o modificare i prodotti, ma presto si vedrà che è possibile farne uso senza autenticazione.
@@ -339,7 +347,7 @@ models.sequelize.query(`SELECT * FROM Products WHERE ((name LIKE :chiave OR desc
 })
 \end{lstlisting}
 \par
-Anche la wildcard \texttt{\%} (che nel \texttt{LIKE} di SQL corrisponde alla ricerca di tutti i pattern con la parola chiave) si trova ora attorno alla variabile \texttt{criteria}. Proseguendo, viene eseguito il testing di Injection per assicurarsi che la vulnerabilità sia stata corretta.La \cref{fig:rest-search-injection-union-after} mostra la risposta JSON del server dopo che si è inviata la richiesta di ricerca con il payload di Injection. Il payload \lstinline{test')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_master--} che in precedenza poteva restituire l'intero schema SQLite ora restituisce un array vuoto.
+Anche la wildcard \texttt{\%} (che nel \texttt{LIKE} di SQL corrisponde alla ricerca di tutti i pattern con la parola chiave) si trova ora attorno alla variabile \texttt{criteria}. Proseguendo, viene eseguito il testing di Injection per assicurarsi che la vulnerabilità sia stata corretta. La \cref{fig:rest-search-injection-union-after} mostra la risposta JSON del server dopo che si è inviata la richiesta di ricerca con il payload di Injection. Il payload \lstinline{test')) UNION SELECT sql,2,3,4,5,6,7,8,9 FROM sqlite_master--} che in precedenza poteva restituire l'intero schema SQLite ora restituisce un array vuoto.
 \par
 La vulnerabilità è stata in questo modo risolta, poiché la funzione back end non accetta più comandi SQL, che ora vengono trattati come stringhe di ricerca e sanificati, restituendo così solo i prodotti che soddisfano la chiave di ricerca.
 \begin{figure}[h]
@@ -412,8 +420,8 @@ const uploadToMemory = multer({ storage: multer.memoryStorage(), limits: { fileS
 \par
 La seconda funzione \texttt{ensureFileIsPassed} controlla la presenza del file, assicurando che non sia nullo.
 \par
-La terza (\texttt{metrics.observeFileUploadMetricsMiddleware()}) riguarda le metriche di Prometheus ed esegue il logging del tipo di file oppure il conteggio di upload erronei.
-\begin{lstlisting}[language=JavaScript,label={lst:observe-file-upload-metrics}]
+La terza \texttt{metrics.observeFileUploadMetricsMiddleware()} riguarda le metriche di Prometheus ed esegue il logging del tipo di file oppure il conteggio di upload erronei. Nel \cref{lst:observe-file-upload-metrics} è possibile vedere il codice di questa funzione, che incrementa i contatori di Prometheus in base al tipo di file caricato e alla risposta del server.
+\begin{lstlisting}[language=JavaScript,label={lst:observe-file-upload-metrics}, caption={Funzione di conteggio dei file caricati e degli errori di upload}]
 export function observeFileUploadMetricsMiddleware () {
   return ({ file }: Request, res: Response, next: NextFunction) => {
     onFinished(res, () => {
@@ -430,7 +438,7 @@ Le successive funzioni riguardano la elaborazione di file specifici con estensio
 \par
 Si sposta l'attenzione quindi su \texttt{routes/fileUpload.ts} dove si modificherà la funzione \texttt{checkFileType}. Si potrebbe molto facilmente pensare di usare il parametro \texttt{.mimetype} di un oggetto \texttt{Multer.File}, ma questo \textbf{non} è sicuro, poiché fa riferimento al header che viene inviato nella richiesta, che può essere intercettato dall'utente.
 \par
-Per eseguire un check \textbf{sicuro} occorre leggere il file per trovare il \textit{magic number}, ovvero un codice specifico che identifica il contenuto del file. Su Node.JS questo viene eseguito con la funzione \texttt{fromBuffer} o \texttt{fileTypeFromBuffer} importata dal package \texttt{file-type}. Successivamente, si tratta semplicemente di controllare che il tipo ritornato sia incluso in quelli consentiti e in caso contrario ritornare un messaggio di errore.
+Per eseguire un check \textbf{sicuro} occorre leggere il file per trovare il \textit{magic number}, ovvero un codice specifico che identifica il contenuto del file. Su Node.JS questo viene eseguito con la funzione \texttt{fromBuffer} o \texttt{fileTypeFromBuffer} importata dal package \texttt{file-type}. Successivamente, si tratta semplicemente di controllare che il tipo ritornato sia incluso in quelli consentiti e in caso contrario ritornare un messaggio di errore. Il \cref{lst:check-file-type-fixed} mostra la funzione di controllo del tipo di file caricato, che ora esegue un controllo sicuro basato sul contenuto del file e non sull'estensione o sul mimetype dichiarato.
 \begin{lstlisting}[language=JavaScript,label={lst:check-file-type-fixed}, caption={Funzione di controllo del tipo di file caricato}]
 import { fromBuffer } from 'file-type'
 async function checkFileType ({ file }: Request, res: Response, next: NextFunction) {
@@ -485,11 +493,11 @@ Finalmente, il lavoro di patching è terminato a buon fine e l'API \texttt{/file
 \chapter{Conclusioni}
 \label{chap:conclusioni}
 % Conclusion chapter should point out: (1) Briefly recall problem, starting point and methods adopted, (2) Briefly report Findings, (3) Briefly discuss benefits/limitations, (4) Discuss Future Work
-In questa tesi si è mostrato il lavoro svolto per la risoluzione di vulnerabilità di sicurezza di un'applicazione vulnerabile. La base di partenza è stata la teoria dietro alle \ac{API}, proseguendo con la lista delle dieci vulnerabilità più comuni che è stata un fondamento solido per l'analisi pratica dell'applicazione. L'uso di strumenti come \ac{ZAP} ha permesso di visualizzare le componenti software in interazione e di comprendere il meccanismo delle \ac{API} studiato precedentemente, contribuendo a una crescita graduale nelle abilità di caccia proattiva di minacce informatiche. In seguito alla scoperta delle stesse, la risoluzione delle vulnerabilità si è rivelata un processo sistematico che ha coinvolto una prima analisi del codice sorgente e successivamente la lettura di documentazione in rete per trovare l'approccio implementativo più sicuro e adeguato al sistema. Con un ultima fase di testing si è potuto confermare la risoluzione dei problemi di sicurezza e concludere il processo, verificando che gli attacchi precedentemente attuabili ora non sono più eseguibili.
+In questa tesi si è mostrato il lavoro svolto per la risoluzione di vulnerabilità di sicurezza di un'applicazione vulnerabile. La base di partenza è stata la teoria dietro alle \ac{API}, proseguendo con la lista OWASP delle vulnerabilità più comuni che è stata un fondamento solido per l'analisi pratica dell'applicazione. L'uso di strumenti come \ac{ZAP} ha permesso di visualizzare le componenti software in interazione e di comprendere il meccanismo delle \ac{API} studiato precedentemente, contribuendo a una crescita graduale nelle abilità di caccia proattiva di minacce informatiche. In seguito alla scoperta delle stesse, la risoluzione delle vulnerabilità si è rivelata un processo sistematico che ha coinvolto una prima analisi del codice sorgente e successivamente la lettura di documentazione in rete per trovare l'approccio implementativo più sicuro e adeguato al sistema. Con un ultima fase di testing si è potuto confermare la risoluzione dei problemi di sicurezza e concludere il processo, verificando che gli attacchi precedentemente attuabili ora non sono più eseguibili.
 \par
 Ovviamente, la protezione da attacchi informatici non è stata terminata (e non lo sarà mai!): il continuo sviluppo di un applicazione o la sola messa in rete di un sito web espone a nuove vulnerabilità che devono essere risolte regolarmente. Un proseguimento naturale del lavoro svolto in questa tesi potrebbe essere sicuramente l'automazione del processo di scansione delle vulnerabilità e l'integrazione di test di sicurezza automatici all'interno della pipeline di sviluppo software.
 \par
-Nonostante lo stato di sicurezza futuro dell'applicazione, in questa tesi sono state acquisite competenze fondamentali per l'analisi e la risoluzione di vulnerabilità comuni, che potranno e sono state applicate in contesti reali di sviluppo software e sicurezza informatica.
+Nonostante lo stato di sicurezza futuro dell'applicazione, in questa tesi sono state acquisite competenze fondamentali per l'analisi e la risoluzione di vulnerabilità comuni, che potranno essere applicate in contesti reali di sviluppo software e sicurezza informatica.
 %----------------------------------------------------------------------------------------
 % BIBLIOGRAPHY
 %----------------------------------------------------------------------------------------
