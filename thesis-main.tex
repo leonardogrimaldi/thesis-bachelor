@@ -384,21 +384,19 @@ Inoltre, se il \textit{middleware} conteneva un controllo dei limiti (rate-limit
 Per risolvere questa vulnerabilità occorre aggiungere il seguente blocco dentro \texttt{server.ts}:
 \begin{lstlisting}[language=JavaScript,label={lst:server-start-fixed}, caption={Controllo di accesso per l'endpoint \texttt{/api/Products}}]
 app.route('/api/Products')
-  .post(security.isAuthorized())
+  .get()
+  .post(security.denyAll())
   .put(security.denyAll())
   .delete(security.denyAll())
-app.route('/api/Products/:id')
-  .post(security.isAuthorized())
-  .put(security.denyAll())
-  .delete(security.denyAll())
+app.use('/api/Products/:id', security.isAccounting())
 \end{lstlisting}
 \par
-I servizi di \texttt{PUT} e \texttt{DELETE} vengono così rifiutati, mentre per il POST è necessario un header di autenticazione; \texttt{GET} resta abilitato normalmente per tutti. La \cref{fig:api-products-put-after} mostra l'errore di autorizzazione restituito dal server dopo aver tentato di eseguire una richiesta \texttt{PUT} su \texttt{/api/Products/9} senza autenticazione.
+I servizi di \texttt{PUT}, \texttt{DELETE} e \texttt{POST} vengono così rifiutati per l'API \textit{Products}; \texttt{GET} resta abilitato normalmente per tutti. Inoltre, per utilizzare l'API \path{/api/Products/:id} è necessario essere amministratori. La \cref{fig:api-products-put-after} mostra l'errore di autorizzazione restituito dal server dopo aver tentato di eseguire una richiesta \texttt{PUT} su \texttt{/api/Products/9} senza autenticazione.
 \par
 L'applicazione così modificata richiede i permessi per la modifica dei prodotti e la vulnerabilità di Broken Access Control si ritiene risolta poiché ora solo gli utenti autorizzati possono eseguire operazioni di modifica sui prodotti, mentre tutti gli altri ricevono un errore di autorizzazione.
 \begin{figure}
     \centering
-    \includegraphics[width=.8\linewidth]{figures/api-products-put-after.png}
+    \includegraphics[width=.8\linewidth]{figures/api-products-put-after1.png}
     \caption{Errore di autorizzazione dopo aver tentato una richiesta \texttt{PUT} su \texttt{/api/Products/9}}
     \label{fig:api-products-put-after}
 \end{figure}
