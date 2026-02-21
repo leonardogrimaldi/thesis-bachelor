@@ -52,7 +52,7 @@ Le vulnerabilità web sono una delle principali sfide nel campo della sicurezza 
 \end{abstract}
 
 \begin{dedication} % this is optional
-Ai miei genitori e a mio fratello.
+Ai miei genitori e a mio fratello
 \end{dedication}
 
 %----------------------------------------------------------------------------------------
@@ -274,7 +274,7 @@ La risposta del server è nuovamente un \texttt{HTTP 204 code} e il file viene c
 \label{chap:implementazione}
 In questo capitolo vengono implementate le contromisure per quattro tipi di vulnerabilità presenti su Juice Shop.
 %Per ognuna di esse viene mostrato il codice vulnerabile, la spiegazione della falla di sicurezza, il payload di attacco e infine la contromisura adottata per risolvere il problema.
-Tutto il codice riportato in questa sezione è rilasciato sotto licenza MIT\cite{juice-shop-license}. È possibile trovare il codice completo di tutte le modifiche effettuate sulla piattaforma Zenodo\cite{bjorn_kimminich_2026_18661516}.
+Tutto il codice riportato in questa sezione è rilasciato sotto licenza MIT\cite{juice-shop-license}. È possibile trovare il codice completo di tutte le modifiche effettuate sulla piattaforma Zenodo\cite{bjorn_kimminich_2026_18724310}.
 \section{XSS (Cross-Site Scripting)}
 \label{sec:xss}
 La componente front end della barra di ricerca è spesso una fonte di vulnerabilità per il computer dell'utente se non gestita in modo sicuro. Molte volte i valori di ricerca non vengono sanificati (ripuliti da codice speciale come tag HTML con codice JavaScript) e ciò può portare all'esecuzione di codice non previsto sulla macchina utente. Se il valore di ricerca viene immesso nell'URL, questo può essere usato per un attacco di hacking dove si inietta del codice malizioso all'interno di un link che la vittima apre, compromettendo i suoi dati sul sito. È proprio ciò che accadde in questa sezione, dove verrà risolta una vulnerabilità \ac{XSS} nella barra di ricerca del sito.
